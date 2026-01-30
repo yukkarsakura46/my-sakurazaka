@@ -1,13 +1,29 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>生寫真統計系統 - 專業版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生寫真統計系統</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 確保圖片長寬比符合生寫真習慣 */
+        .photo-container {
+            aspect-ratio: 3 / 4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8fafc;
+            overflow: hidden;
+        }
+        .photo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 填滿格子，若比例不對會輕微裁切但不會留白 */
+        }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-20">
+<body class="bg-slate-50 min-h-screen pb-20 font-sans">
     <div id="app">
         <nav class="bg-white shadow-sm p-4 sticky top-0 z-30">
             <div class="max-w-6xl mx-auto flex justify-between items-center">
@@ -20,19 +36,16 @@
             </div>
         </nav>
 
-        <main class="max-w-5xl mx-auto p-6">
+        <main class="max-w-5xl mx-auto p-4">
             <div v-if="showInput" class="bg-white p-6 rounded-3xl shadow-xl mb-8 border-2 border-pink-100">
-                <h3 class="font-bold text-gray-700 mb-4">快速新增</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input v-model="newItem.name" type="text" placeholder="成員名字 (如：石森璃花)" class="border p-3 rounded-xl outline-none focus:ring-2 focus:ring-pink-400">
-                    <input v-model="newItem.series" type="text" placeholder="系列 (如：10th單曲制服)" class="border p-3 rounded-xl outline-none focus:ring-2 focus:ring-pink-400">
-                    <button @click="addBatchItems" class="bg-pink-500 text-white p-3 rounded-xl font-bold hover:bg-pink-600 transition">
-                        一鍵新增 (預設4種)
-                    </button>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <input v-model="newItem.name" type="text" placeholder="成員 (如：石森璃花)" class="border p-3 rounded-xl outline-none focus:ring-2 focus:ring-pink-400">
+                    <input v-model="newItem.series" type="text" placeholder="系列 (如：10th單曲)" class="border p-3 rounded-xl outline-none focus:ring-2 focus:ring-pink-400">
+                    <button @click="addBatchItems" class="bg-pink-500 text-white p-3 rounded-xl font-bold">一鍵新增 (預設4種)</button>
                 </div>
-                <div class="mt-4 flex justify-between">
-                    <span class="text-xs text-gray-400 italic">自動產生：ヨリ、チュウ、ヒキ、座り</span>
-                    <button @click="clearAll" class="text-xs text-red-400 hover:underline">清空資料庫</button>
+                <div class="flex justify-between border-t pt-4">
+                    <button @click="exportData" class="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded">匯出備份檔</button>
+                    <button @click="clearAll" class="text-xs text-red-400 hover:underline">清空所有資料</button>
                 </div>
             </div>
 
@@ -40,58 +53,60 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div v-for="name in memberList" :key="name" 
                          @click="currentMember = name"
-                         class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md cursor-pointer text-center transition-all border border-gray-100 hover:border-pink-300">
+                         class="bg-white p-6 rounded-2xl shadow-sm text-center border border-gray-100 active:scale-95 transition">
                         <div class="font-bold text-gray-700 text-lg">{{ name }}</div>
-                        <div class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">Total: {{ getMemberOwnedCount(name) }}</div>
+                        <div class="text-[10px] text-gray-400 mt-1">已達成 {{ getMemberOwnedCount(name) }} 枚</div>
                     </div>
                 </div>
             </div>
 
             <div v-else>
-                <div class="flex items-center mb-8">
-                    <button @click="currentMember = null" class="bg-white w-10 h-10 rounded-full shadow-sm flex items-center justify-center text-gray-400 hover:text-pink-500 transition mr-4 font-bold">
-                        ←
-                    </button>
+                <div class="flex items-center mb-6">
+                    <button @click="currentMember = null" class="mr-4 text-gray-400 text-xl font-bold">←</button>
                     <h2 class="text-2xl font-bold text-gray-800">{{ currentMember }}</h2>
                 </div>
                 
-                <div v-for="(items, seriesName) in memberSeriesGroup" :key="seriesName" class="mb-12 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-50">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-bold text-slate-800">{{ seriesName }}</h3>
-                        <div class="text-xs font-bold text-pink-500 bg-pink-50 px-3 py-1 rounded-full">
-                            Progress: {{ getProgress(items).count }} / {{ items.length }}
-                        </div>
+                <div v-for="(items, seriesName) in memberSeriesGroup" :key="seriesName" class="mb-10 bg-white p-4 rounded-3xl shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-800 mb-4 px-2">{{ seriesName }}</h3>
+
+                    <div class="mb-6 relative group rounded-2xl overflow-hidden bg-slate-100 border-2 border-dashed border-gray-200 min-h-[150px]">
+                        <img v-if="seriesImages[currentMember + seriesName]" 
+                             :src="seriesImages[currentMember + seriesName]" 
+                             @click="zoomImage(seriesImages[currentMember + seriesName])"
+                             class="w-full h-auto max-h-[500px] object-contain cursor-zoom-in">
+                        <div v-else class="py-10 text-center text-gray-400 text-xs">尚未上傳整套展示圖</div>
+                        <label class="absolute bottom-2 right-2 bg-white/80 backdrop-blur px-3 py-1 rounded-lg text-[10px] font-bold cursor-pointer">
+                            📷 上傳展示圖
+                            <input type="file" class="hidden" @change="(e) => handleSeriesImageUpload(e, currentMember + seriesName)" accept="image/*">
+                        </label>
                     </div>
 
-                    <div class="mb-8">
-                        <div class="relative w-full rounded-2xl overflow-hidden bg-slate-100 border-2 border-dashed border-gray-200" style="min-height: 200px; max-height: 400px;">
-                            <img v-if="seriesImages[currentMember + seriesName]" :src="seriesImages[currentMember + seriesName]" class="w-full h-full object-contain mx-auto">
-                            <div v-else class="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
-                                <p class="text-sm font-bold">點擊右下角按鈕上傳「整套展示圖」</p>
-                                <p class="text-[10px] mt-1 opacity-60">(適合放官方清單或合照)</p>
-                            </div>
-                            <label class="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-lg shadow-sm cursor-pointer hover:bg-white text-xs font-bold text-blue-600">
-                                📷 上傳整套圖
-                                <input type="file" class="hidden" @change="(e) => handleSeriesImageUpload(e, currentMember + seriesName)" accept="image/*">
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div v-for="item in items" :key="item.id" 
                              @click="toggleItem(item.id)"
-                             class="relative group h-20 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer border-2"
-                             :class="ownedIds.has(item.id) ? 'border-pink-500 bg-pink-50' : 'border-gray-100 bg-white text-gray-300'">
+                             class="relative rounded-xl overflow-hidden border-2 transition-all active:scale-95"
+                             :class="ownedIds.has(item.id) ? 'border-pink-500 bg-pink-50' : 'border-gray-100 bg-white'">
                             
-                            <span class="font-bold text-sm tracking-widest">{{ item.type }}</span>
-                            <div v-if="ownedIds.has(item.id)" class="absolute top-1 right-2 text-pink-500 text-[10px]">✓</div>
+                            <div class="photo-container">
+                                <span v-if="!ownedIds.has(item.id)" class="text-xs font-bold text-gray-300 uppercase tracking-tighter">{{ item.type }}</span>
+                                <div v-else class="text-pink-500 font-bold text-lg">✓</div>
+                            </div>
                             
-                            <div @click.stop="removeItem(item.id)" class="absolute -top-2 -right-2 bg-red-400 text-white w-5 h-5 rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</div>
+                            <div class="bg-gray-50 py-1 text-center border-t border-gray-100">
+                                <span class="text-[10px] font-bold text-gray-500">{{ item.type }}</span>
+                            </div>
+
+                            <div @click.stop="removeItem(item.id)" class="absolute top-1 right-1 bg-red-400/80 text-white w-4 h-4 rounded-full text-[8px] flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500 transition">✕</div>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
+
+        <div v-if="zoomedImg" @click="zoomedImg = null" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+            <img :src="zoomedImg" class="max-w-full max-h-full object-contain">
+            <p class="absolute bottom-10 text-white text-xs opacity-50">點擊任意處關閉</p>
+        </div>
     </div>
 
     <script>
@@ -101,10 +116,11 @@
                 return {
                     showInput: false,
                     currentMember: null,
+                    zoomedImg: null,
                     newItem: { name: '', series: '' },
                     rawItems: [],
                     ownedIds: new Set(),
-                    seriesImages: {} // 儲存系列大圖
+                    seriesImages: {}
                 }
             },
             computed: {
@@ -122,15 +138,18 @@
                 }
             },
             mounted() {
-                const savedOwned = localStorage.getItem('owned_photos');
-                if (savedOwned) this.ownedIds = new Set(JSON.parse(savedOwned));
-                const savedItems = localStorage.getItem('raw_items');
-                if (savedItems) this.rawItems = JSON.parse(savedItems);
-                const savedSeriesImgs = localStorage.getItem('series_images');
-                if (savedSeriesImgs) this.seriesImages = JSON.parse(savedSeriesImgs);
+                this.loadData();
                 if (this.rawItems.length === 0) this.showInput = true;
             },
             methods: {
+                loadData() {
+                    const savedOwned = localStorage.getItem('owned_photos');
+                    if (savedOwned) this.ownedIds = new Set(JSON.parse(savedOwned));
+                    const savedItems = localStorage.getItem('raw_items');
+                    if (savedItems) this.rawItems = JSON.parse(savedItems);
+                    const savedSeriesImgs = localStorage.getItem('series_images');
+                    if (savedSeriesImgs) this.seriesImages = JSON.parse(savedSeriesImgs);
+                },
                 addBatchItems() {
                     if (!this.newItem.name || !this.newItem.series) return;
                     const types = ['ヨリ', 'チュウ', 'ヒキ', '座り'];
@@ -144,46 +163,20 @@
                 handleSeriesImageUpload(event, key) {
                     const file = event.target.files[0];
                     if (!file) return;
+                    // 為了手機性能，限制圖片大小並轉為縮圖
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        this.seriesImages[key] = e.target.result;
-                        this.saveData();
-                    };
-                    reader.readAsDataURL(file);
-                },
-                removeItem(id) {
-                    this.rawItems = this.rawItems.filter(i => i.id !== id);
-                    this.ownedIds.delete(id);
-                    this.saveData();
-                },
-                toggleItem(id) {
-                    if (this.ownedIds.has(id)) this.ownedIds.delete(id);
-                    else this.ownedIds.add(id);
-                    this.saveData();
-                },
-                getProgress(items) {
-                    const count = items.filter(i => this.ownedIds.has(i.id)).length;
-                    return { count };
-                },
-                getMemberOwnedCount(name) {
-                    return this.rawItems.filter(i => i.name === name && this.ownedIds.has(i.id)).length;
-                },
-                saveData() {
-                    localStorage.setItem('raw_items', JSON.stringify(this.rawItems));
-                    localStorage.setItem('owned_photos', JSON.stringify([...this.ownedIds]));
-                    localStorage.setItem('series_images', JSON.stringify(this.seriesImages));
-                },
-                clearAll() {
-                    if(confirm('警告：確定要清空所有資料嗎？')) {
-                        this.rawItems = [];
-                        this.ownedIds = new Set();
-                        this.seriesImages = {};
-                        this.saveData();
-                        this.currentMember = null;
-                    }
-                }
-            }
-        }).mount('#app')
-    </script>
-</body>
-</html>
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 1200; // 限制寬度
+                            let width = img.width;
+                            let height = img.height;
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx
