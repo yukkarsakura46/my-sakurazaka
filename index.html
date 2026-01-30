@@ -179,4 +179,54 @@
                             canvas.width = width;
                             canvas.height = height;
                             const ctx = canvas.getContext('2d');
-                            ctx
+                            ctx.drawImage(img, 0, 0, width, height);
+                            this.seriesImages[key] = canvas.toDataURL('image/jpeg', 0.7); // 壓縮品質
+                            this.saveData();
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                },
+                removeItem(id) {
+                    if(confirm('確定刪除？')) {
+                        this.rawItems = this.rawItems.filter(i => i.id !== id);
+                        this.ownedIds.delete(id);
+                        this.saveData();
+                    }
+                },
+                toggleItem(id) {
+                    if (this.ownedIds.has(id)) this.ownedIds.delete(id);
+                    else this.ownedIds.add(id);
+                    this.saveData();
+                },
+                zoomImage(url) {
+                    this.zoomedImg = url;
+                },
+                getMemberOwnedCount(name) {
+                    return this.rawItems.filter(i => i.name === name && this.ownedIds.has(i.id)).length;
+                },
+                saveData() {
+                    localStorage.setItem('raw_items', JSON.stringify(this.rawItems));
+                    localStorage.setItem('owned_photos', JSON.stringify([...this.ownedIds]));
+                    localStorage.setItem('series_images', JSON.stringify(this.seriesImages));
+                },
+                exportData() {
+                    const data = JSON.stringify(localStorage);
+                    const blob = new Blob([data], {type: 'text/plain'});
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `sakura_backup_${new Date().toLocaleDateString()}.txt`;
+                    a.click();
+                },
+                clearAll() {
+                    if(confirm('確定要清空嗎？')) {
+                        localStorage.clear();
+                        location.reload();
+                    }
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
