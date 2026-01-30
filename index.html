@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>生寫真統計系統 - 專業版</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen pb-20">
+    <div id="app">
+        <nav class="bg-white shadow-sm p-4 sticky top-0 z-30">
+            <div class="max-w-6xl mx-auto flex justify-between items-center">
+                <h1 class="text-xl font-bold text-gray-800 cursor-pointer flex items-center" @click="currentMember = null">
+                    <span class="text-pink-500 mr-2">🌸</span> 生寫真統計
+                </h1>
+                <button @click="showInput = !showInput" class="bg-gray-800 text-white px-4 py-2 rounded-full text-sm hover:bg-gray-700 transition">
+                    {{ showInput ? '關閉管理' : '＋ 新增系列' }}
+                </button>
+            </div>
+        </nav>
+
+        <main class="max-w-5xl mx-auto p-6">
+            <div v-if="showInput" class="bg-white p-6 rounded-3xl shadow-xl mb-8 border-2 border-pink-100">
+                <h3 class="font-bold text-gray-700 mb-4">快速新增</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input v-model="newItem.name" type="text" placeholder="成員名字 (如：石森璃花)" class="border p-3 rounded-xl outline-none focus:ring-2 focus:ring-pink-400">
+                    <input v-model="newItem.series" type="text" placeholder="系列 (如：10th單曲制服)" class="border p-3 rounded-xl outline-none focus:ring-2 focus:ring-pink-400">
+                    <button @click="addBatchItems" class="bg-pink-500 text-white p-3 rounded-xl font-bold hover:bg-pink-600 transition">
+                        一鍵新增 (預設4種)
+                    </button>
+                </div>
+                <div class="mt-4 flex justify-between">
+                    <span class="text-xs text-gray-400 italic">自動產生：ヨリ、チュウ、ヒキ、座り</span>
+                    <button @click="clearAll" class="text-xs text-red-400 hover:underline">清空資料庫</button>
+                </div>
+            </div>
+
+            <div v-if="!currentMember">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div v-for="name in memberList" :key="name" 
+                         @click="currentMember = name"
+                         class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md cursor-pointer text-center transition-all border border-gray-100 hover:border-pink-300">
+                        <div class="font-bold text-gray-700 text-lg">{{ name }}</div>
+                        <div class="text-[10px] text-gray-400 mt-1 uppercase tracking-widest">Total: {{ getMemberOwnedCount(name) }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-else>
+                <div class="flex items-center mb-8">
+                    <button @click="currentMember = null" class="bg-white w-10 h-10 rounded-full shadow-sm flex items-center justify-center text-gray-400 hover:text-pink-500 transition mr-4 font-bold">
+                        ←
+                    </button>
+                    <h2 class="text-2xl font-bold text-gray-800">{{ currentMember }}</h2>
+                </div>
+                
+                <div v-for="(items, seriesName) in memberSeriesGroup" :key="seriesName" class="mb-12 bg-white p-6 rounded-[2rem] shadow-sm border border-gray-50">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-slate-800">{{ seriesName }}</h3>
+                        <div class="text-xs font-bold text-pink-500 bg-pink-50 px-3 py-1 rounded-full">
+                            Progress: {{ getProgress(items).count }} / {{ items.length }}
+                        </div>
+                    </div>
+
+                    <div class="mb-8">
+                        <div class="relative w-full rounded-2xl overflow-hidden bg-slate-100 border-2 border-dashed border-gray-200" style="min-height: 200px; max-height: 400px;">
+                            <img v-if="seriesImages[currentMember + seriesName]" :src="seriesImages[currentMember + seriesName]" class="w-full h-full object-contain mx-auto">
+                            <div v-else class="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                                <p class="text-sm font-bold">點擊右下角按鈕上傳「整套展示圖」</p>
+                                <p class="text-[10px] mt-1 opacity-60">(適合放官方清單或合照)</p>
+                            </div>
+                            <label class="absolute bottom-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-lg shadow-sm cursor-pointer hover:bg-white text-xs font-bold text-blue-600">
+                                📷 上傳整套圖
+                                <input type="file" class="hidden" @change="(e) => handleSeriesImageUpload(e, currentMember + seriesName)" accept="image/*">
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div v-for="item in items" :key="item.id" 
+                             @click="toggleItem(item.id)"
+                             class="relative group h-20 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer border-2"
+                             :class="ownedIds.has(item.id) ? 'border-pink-500 bg-pink-50' : 'border-gray-100 bg-white text-gray-300'">
+                            
+                            <span class="font-bold text-sm tracking-widest">{{ item.type }}</span>
+                            <div v-if="ownedIds.has(item.id)" class="absolute top-1 right-2 text-pink-500 text-[10px]">✓</div>
+                            
+                            <div @click.stop="removeItem(item.id)" class="absolute -top-2 -right-2 bg-red-400 text-white w-5 h-5 rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition">✕</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    showInput: false,
+                    currentMember: null,
+                    newItem: { name: '', series: '' },
+                    rawItems: [],
+                    ownedIds: new Set(),
+                    seriesImages: {} // 儲存系列大圖
+                }
+            },
+            computed: {
+                memberList() {
+                    return [...new Set(this.rawItems.map(i => i.name))];
+                },
+                memberSeriesGroup() {
+                    if (!this.currentMember) return {};
+                    const filtered = this.rawItems.filter(i => i.name === this.currentMember);
+                    return filtered.reduce((acc, item) => {
+                        if (!acc[item.series]) acc[item.series] = [];
+                        acc[item.series].push(item);
+                        return acc;
+                    }, {});
+                }
+            },
+            mounted() {
+                const savedOwned = localStorage.getItem('owned_photos');
+                if (savedOwned) this.ownedIds = new Set(JSON.parse(savedOwned));
+                const savedItems = localStorage.getItem('raw_items');
+                if (savedItems) this.rawItems = JSON.parse(savedItems);
+                const savedSeriesImgs = localStorage.getItem('series_images');
+                if (savedSeriesImgs) this.seriesImages = JSON.parse(savedSeriesImgs);
+                if (this.rawItems.length === 0) this.showInput = true;
+            },
+            methods: {
+                addBatchItems() {
+                    if (!this.newItem.name || !this.newItem.series) return;
+                    const types = ['ヨリ', 'チュウ', 'ヒキ', '座り'];
+                    types.forEach(type => {
+                        const id = `id-${Date.now()}-${Math.random()}`;
+                        this.rawItems.push({ id, name: this.newItem.name, series: this.newItem.series, type });
+                    });
+                    this.saveData();
+                    this.newItem.series = ''; 
+                },
+                handleSeriesImageUpload(event, key) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.seriesImages[key] = e.target.result;
+                        this.saveData();
+                    };
+                    reader.readAsDataURL(file);
+                },
+                removeItem(id) {
+                    this.rawItems = this.rawItems.filter(i => i.id !== id);
+                    this.ownedIds.delete(id);
+                    this.saveData();
+                },
+                toggleItem(id) {
+                    if (this.ownedIds.has(id)) this.ownedIds.delete(id);
+                    else this.ownedIds.add(id);
+                    this.saveData();
+                },
+                getProgress(items) {
+                    const count = items.filter(i => this.ownedIds.has(i.id)).length;
+                    return { count };
+                },
+                getMemberOwnedCount(name) {
+                    return this.rawItems.filter(i => i.name === name && this.ownedIds.has(i.id)).length;
+                },
+                saveData() {
+                    localStorage.setItem('raw_items', JSON.stringify(this.rawItems));
+                    localStorage.setItem('owned_photos', JSON.stringify([...this.ownedIds]));
+                    localStorage.setItem('series_images', JSON.stringify(this.seriesImages));
+                },
+                clearAll() {
+                    if(confirm('警告：確定要清空所有資料嗎？')) {
+                        this.rawItems = [];
+                        this.ownedIds = new Set();
+                        this.seriesImages = {};
+                        this.saveData();
+                        this.currentMember = null;
+                    }
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
