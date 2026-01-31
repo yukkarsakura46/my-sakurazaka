@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>生寫真統計系統 - 櫻坂46 專屬版</title>
+    <title>生寫真統計系統 - 櫻坂46 專屬</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -14,7 +14,7 @@
             border-radius: 6px; font-size: 11px; font-weight: 800;
             transition: all 0.2s ease; letter-spacing: -0.5px;
         }
-        .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; max-height: 1000px; overflow: hidden; }
+        .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; max-height: 1200px; overflow: hidden; }
         .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
     </style>
 </head>
@@ -30,7 +30,7 @@
         <main class="max-w-xl mx-auto p-3">
             <div v-if="showInput" class="bg-white p-5 rounded-2xl shadow-xl mb-6 border-2 border-pink-50">
                 <div class="space-y-3">
-                    <input v-model="newItem.name" list="member-list" placeholder="輸入或選擇成員 (如：石森璃花)" class="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-pink-400 text-sm">
+                    <input v-model="newItem.name" list="member-list" placeholder="輸入或選擇成員" class="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-pink-400 text-sm">
                     <datalist id="member-list">
                         <option v-for="name in presetMembers" :value="name"></option>
                     </datalist>
@@ -45,8 +45,13 @@
                     
                     <button @click="addBatchItems" class="w-full bg-pink-500 text-white p-2.5 rounded-xl font-bold text-sm shadow-lg">快速新增系列 (4種)</button>
                 </div>
-                <div class="flex justify-between mt-4 border-t pt-3">
-                    <button @click="exportData" class="text-[10px] text-blue-500 font-bold">備份資料</button>
+                <div class="flex justify-between mt-4 border-t pt-3 gap-2">
+                    <div class="flex gap-2">
+                        <button @click="exportData" class="text-[10px] text-blue-500 font-bold border border-blue-100 px-2 py-1 rounded">備份</button>
+                        <label class="text-[10px] text-green-600 font-bold border border-green-100 px-2 py-1 rounded cursor-pointer">
+                            還原 <input type="file" class="hidden" @change="importData" accept=".txt">
+                        </label>
+                    </div>
                     <button @click="clearAll" class="text-[10px] text-red-300 font-bold">清空資料庫</button>
                 </div>
             </div>
@@ -84,7 +89,7 @@
                             <div class="mb-3 relative rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center">
                                 <img v-if="seriesImages[currentMember + seriesName]" :src="seriesImages[currentMember + seriesName]" @click="zoomedImg = seriesImages[currentMember + seriesName]" class="w-full h-auto max-h-[350px] object-contain">
                                 <label v-else class="py-5 cursor-pointer w-full text-center">
-                                    <span class="text-[10px] text-gray-300 font-bold uppercase tracking-widest">+ Upload Set Photo</span>
+                                    <span class="text-[10px] text-gray-300 font-bold uppercase tracking-widest">+ Upload Reference</span>
                                     <input type="file" class="hidden" @change="(e) => handleSeriesImageUpload(e, currentMember + seriesName)" accept="image/*">
                                 </label>
                             </div>
@@ -104,8 +109,8 @@
         createApp({
             data() {
                 return {
-                    presetMembers: ['石森璃花', '遠藤理子', '小田倉麗奈', '小島凪紗', '谷口愛季', '中嶋優月', '的野美青', '向井純葉', '村井優', '村山美羽', '山下瞳月', '田村保乃', '山﨑天', '森田ひかる', '守屋麗奈', '藤吉夏鈴'],
-                    presetSeries: ['5th Single 「桜月」封入', '「夏の近道」 MV衣装', '「夏の近道」 MV 制服', '「BAN」 MV衣装', '2023年 冬私服コーデ', '三期生ブックレット衣装', 'スーツコーデ', 'カラーコーデ', '6th Single 「Start over!」封入', '「3rd TOUR 2023」 オープニング衣装', '「Start over!」 ジャケット写真衣装', '「静寂の暴力」 MV衣装', 'サマーワンピース', 'デニムコーデ', '2023年 ハロウィン衣装', '7th Single 「承認欲求」封入', '2023年 クリスマスサンタ衣装', '「3rd TOUR 2023」 白スーツ衣装', '2023年夏フェス衣装', "「Nobody's fault」MV衣装", '2023年 読書コーデ', '2024年 振袖衣装', '「承認欲求」 ジャケット写真衣装', '「マモリビト」 MV衣装', '3rd Single BACKS LIVE!!', 'おうちコーデ', 'ジャンプスーツ', '8th Single 「何歳の頃に戻りたいのか?」 封入', '「3rd TOUR 2023」 ピンク衣装', '[3rd YEAR ANNIVERSARY LIVE」 ライブ衣装 (4th TOUR 发售)', '「何歳の頃に戻りたいのか?」 ジャケット写真衣装', '2024年 春私服コーデ', '「何度 LOVE SONG の歌詞を読み返しただろう」 MV衣装', '「7th Single BACKS LIVE!!」 オープニング衣装', '「油を注せ!」 MV衣装', '「小林由依 卒業コンサート」 ライブ衣装', 'カラーデニム', '2024年浴衣', '「小林由依 卒業コンサート」 赤衣装', '「3rd TOUR 2023」 ライブ衣装', '【会場予約特典】 東京ドーム限定メンバー生写真(チュウ)', '東京ドーム完売御礼記念!! ライブ会場撮りおろしプレミアム生写真(ウエスト)', '9th Single 「自業自得」封入', '麦わら帽子コーデ', '2023年 年末歌唱衣装', '「自業自得」 ジャケット写真衣装', '「8th Single BACKS LIVE!!」 ライブ衣装', '「愛し合いなさい」 MV カラフル衣装', '「愛し合いなさい」 MV 黒衣装', 'Tシャツコーデ', '「引きこもる時間はない」 MV 衣装', '「4th ARENA TOUR 2024」 ライブ衣装', 'ワイシャツコーデ', '2024年 ハロウィン衣装', 'カラーニットコーデ', '10th Single I want tomorrow to come」封入', '2024年 クリスマスサンタ衣装', '[3rd YEAR ANNIVERSARY LIVE」 ライブ衣装 (4th YEAR 发售)', '「4th ARENA TOUR IN 東京ドーム」 オープニング衣装', 'どうぶつ着ぐるみ', '「僕は僕を好きになれない」 MV衣装', '「9th Single BACKS LIVE!!」 オープニング衣装', 'マフラーコーデ', '[I want tomorrow to come」 ジャケット写真衣装', '「本質的なこと」 MV衣装', '福袋 2025 「東京ドーム」 オープニング衣装 新カット', '2025年振袖', '2023年 年末衣装', 'いぬみみコーデ', '11th Single 「UDAGAWA GENERATION」封入', '「UDAGAWA GENERATION」 ジャケット写真衣装', '「UDAGAWA GENERATION」MV衣装', '「Nightmare 症候群」MV衣装', '2024年夏フェス衣装', 'モードコーデ', '冬私服コーデ', '「4th ARENA TOUR」 オープニング衣装', '「4th YEAR ANNIVERSARY LIVE」 ライブ衣装', '「4th ARENA TOUR」 ライブ衣装', 'ネクタイコーデ', '2nd Album 「Addiction」封入', '「Addiction」 MV衣装', '「三期生ライブ」 オープニング衣装', 'レザージャケットコーデ', '12th Single 「Make or Break」封入', '2025年浴衣', '「4th ARENA TOUR IN 東京ドーム」 ライブ衣装', '2024年 夏フェス衣装', '「港區パセリ」 MV衣装', '[10th Single BACKS LIVE!!」 ライブ衣装', 'ポロシャツコーデ', 'クラシックコーデ', '「Make or Break」 ジャケット写真衣装', '「5th TOUR 2025 Addiction”」 ライブ衣装"', '「三期生ライブ」衣装', 'チェックコーデ', '「12th Single BACKS LIVE!!」ライブ衣装', '「5th TOUR 2025 “Addiction”」黑衣装', 'パイレーツ衣装', '冬服', '「Unhappy birthday構文」MV衣装', '「Unhappy birthday構文」ジャケット写真衣装', '「12th Single BACKS LIVE!!」黑衣装', '2025年 サンタ衣装', 'スタイリング制服', '2026年 振袖', 'ジャージ', '2026年 バレンタインコーデ', '福袋 2026 「港區パセリ」 MV新カット'],
+                    presetMembers: ['石森璃花', '遠藤理子', '小田倉麗奈', '小島凪紗', '谷口愛季', '中嶋優月', '的野美青', '向井純葉', '村井優', '村山美羽', '山下瞳月', '田村保乃', '山﨑天', '森田ひかる', '守屋麗奈', '藤吉夏鈴',],
+                    presetSeries: ['5th Single 「桜月」封入', '「夏の近道」 MV衣装', '「夏の近道」 MV 制服', '「BAN」 MV衣装', '2023年 冬私服コーデ', '三期生ブックレット衣装', 'スーツコーデ', 'カラーコーデ', '6th Single 「Start over!」封入', '「3rd TOUR 2023」 オープニング衣装', '「Start over!」 ジャケット写真衣装', '「静寂の暴力」 MV衣装', 'サマーワンピース', 'デニムコーデ', '2023年 ハロウィン衣装', '7th Single 「承認欲求」封入', '2023年 クリスマスサンタ衣装', '「3rd TOUR 2023」 白スーツ衣装', '2023年夏フェス衣装', "「Nobody's fault」MV衣装", '2023年 読書コーデ', '2024年 振袖衣装', '「承認欲求」 ジャケット写真內容', '「マモリビト」 MV衣装', '3rd Single BACKS LIVE!!', 'おうちコーデ', 'ジャンプスーツ', '8th Single 「何歳の頃に戻りたいのか?」 封入', '「3rd TOUR 2023」 ピンク衣装', '「3rd YEAR ANNIVERSARY LIVE」 ライブ衣装 (4th TOUR 发售)', '「何歳の頃に戻りたいのか?」 ジャケット写真衣装', '2024年 春私服コーデ', '「何度 LOVE SONG の歌詞を読み返しただろう」 MV衣装', '「7th Single BACKS LIVE!!」 オープニング衣装', '「油を注せ!」 MV衣装', '「小林由依 卒業コンサート」 ライブ衣装', 'カラーデニム', '2024年浴衣', '「小林由依 卒業コンサート」 赤衣装', '「3rd TOUR 2023」 ライブ衣装', '【会場予約特典】 東京ドーム限定メンバー生写真(チュウ)', '東京ドーム完売御禮記念!! ライブ會場撮りおろしプレミアム生寫真(ウエスト)', '9th Single 「自業自得」封入', '麥わら帽子コーデ', '2023年 年末歌唱衣装', '「自業自得」 ジャケット写真衣装', '「8th Single BACKS LIVE!!」 ライブ衣装', '「愛し合いなさい」 MV カラフル衣装', '「愛し合いなさい」 MV 黑衣装', 'Tシャツコーデ', '「引きこもる時間はない」 MV 衣装', '「4th ARENA TOUR 2024」 ライブ衣装', 'ワイシャツコーデ', '2024年 ハロウィン衣装', 'カラーニットコーデ', '10th Single I want tomorrow to come」封入', '2024年 クリスマスサンタ衣装', '「3rd YEAR ANNIVERSARY LIVE」 ライブ衣装 (4th YEAR 发售)', '「4th ARENA TOUR IN 東京ドーム」 オープニング衣装', 'どうぶつ着ぐるみ', '「僕は僕を好きになれない」 MV衣装', '「9th Single BACKS LIVE!!」 オープニング衣装', 'マフラーコーデ', '「I want tomorrow to come」 ジャケット写真衣装', '「本質的なこと」 MV衣装', '福袋 2025 「東京ドーム」 オープニング衣装 新カット', '2025年振袖', '2023年 年末衣装', 'いぬみみコーデ', '11th Single 「UDAGAWA GENERATION」封入', '「UDAGAWA GENERATION」 ジャケット写真衣装', '「UDAGAWA GENERATION」MV衣装', '「Nightmare 症候群」MV衣装', '2024年夏フェス衣装', 'モードコーデ', '冬私服コーデ', '「4th ARENA TOUR」 オープニング衣装', '「4th YEAR ANNIVERSARY LIVE」 ライブ衣装', '「4th ARENA TOUR」 ライブ衣装', 'ネクタイコーデ', '2nd Album 「Addiction」封入', '「Addiction」 MV衣装', '「三期生ライブ」 オープニング衣装', 'レザージャケットコーデ', '12th Single 「Make or Break」封入', '2025年浴衣', '「4th ARENA TOUR IN 東京ドーム」 ライブ衣装', '2024年 夏フェス衣装', '「港區パセリ」 MV衣装', '「10th Single BACKS LIVE!!」 ライブ衣装', 'ポロシャツコーデ', 'クラシックコーデ', '「Make or Break」 ジャケット写真衣装', '「5th TOUR 2025 Addiction”」 ライブ衣装"', '「三期生ライブ」衣装', 'チェックコーデ', '「12th Single BACKS LIVE!!」ライブ衣装', '「5th TOUR 2025 “Addiction”」黑衣装', 'パイレーツ衣装', '冬服', '「Unhappy birthday構文」MV衣装', '「Unhappy birthday構文」ジャケット写真衣装', '「12th Single BACKS LIVE!!」黑衣装', '2025年 サンタ衣装', 'スタイリング制服', '2026年 振袖', 'ジャージ', '2026年 バレンタインコーデ', '福袋 2026 「港區パセリ」 MV衣装 新カット'],
                     showInput: false, selectedPreset: '', currentMember: null, zoomedImg: null, newItem: { name: '', series: '' }, rawItems: [], ownedIds: new Set(), seriesImages: {}, expandedSeries: new Set()
                 }
             },
@@ -144,7 +149,7 @@
                     });
                     this.saveData();
                 },
-                removeSeries(seriesName) { if(confirm(`Delete "${seriesName}"?`)) { this.rawItems = this.rawItems.filter(i => !(i.name === this.currentMember && i.series === seriesName)); this.expandedSeries.delete(seriesName); this.saveData(); } },
+                removeSeries(seriesName) { if(confirm(`確定刪除？`)) { this.rawItems = this.rawItems.filter(i => !(i.name === this.currentMember && i.series === seriesName)); this.expandedSeries.delete(seriesName); this.saveData(); } },
                 handleSeriesImageUpload(event, key) {
                     const file = event.target.files[0]; if (!file) return;
                     const reader = new FileReader();
@@ -170,9 +175,22 @@
                 exportData() {
                     const data = JSON.stringify(localStorage);
                     const blob = new Blob([data], {type: 'text/plain'});
-                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `photo_backup.txt`; a.click();
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `photo_backup_${new Date().getTime()}.txt`; a.click();
                 },
-                clearAll() { if(confirm('Clear all data?')) { localStorage.clear(); location.reload(); } }
+                importData(event) {
+                    const file = event.target.files[0]; if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = JSON.parse(e.target.result);
+                            Object.keys(data).forEach(key => localStorage.setItem(key, data[key]));
+                            alert('還原成功！網頁將重新載入');
+                            location.reload();
+                        } catch (err) { alert('備份檔格式不正確'); }
+                    };
+                    reader.readAsText(file);
+                },
+                clearAll() { if(confirm('警告：確定要清除所有資料嗎？')) { localStorage.clear(); location.reload(); } }
             }
         }).mount('#app')
     </script>
