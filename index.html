@@ -3,118 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>生寫真統計系統</title>
+    <title>生寫真統計系統 - 櫻坂46 專屬版</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .photo-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-        }
+        .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
         .item-slot {
-            aspect-ratio: 3 / 4;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-            font-size: 10px;
-            font-weight: bold;
-            transition: all 0.2s;
+            aspect-ratio: 2 / 1; 
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 6px; font-size: 11px; font-weight: 800;
+            transition: all 0.2s ease; letter-spacing: -0.5px;
         }
-        /* 轉場動畫 */
-        .expand-enter-active, .expand-leave-active { transition: all 0.3s ease; max-height: 1000px; overflow: hidden; }
+        .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; max-height: 1000px; overflow: hidden; }
         .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-10">
     <div id="app">
-        <nav class="bg-white shadow-sm p-4 sticky top-0 z-30">
+        <nav class="bg-white shadow-sm p-4 sticky top-0 z-30 border-b border-gray-100">
             <div class="max-w-xl mx-auto flex justify-between items-center">
-                <h1 class="text-lg font-bold text-gray-800 cursor-pointer" @click="currentMember = null">
-                    🌸 生寫真統計
-                </h1>
-                <button @click="showInput = !showInput" class="text-xs bg-gray-100 px-3 py-1.5 rounded-full font-bold">
-                    管理
-                </button>
+                <h1 class="text-lg font-black text-gray-800" @click="currentMember = null">🌸 SAKURA <span class="text-pink-500">COLLECTION</span></h1>
+                <button @click="showInput = !showInput" class="text-[10px] bg-slate-800 text-white px-3 py-1.5 rounded-full font-bold uppercase">Admin</button>
             </div>
         </nav>
 
         <main class="max-w-xl mx-auto p-3">
-            <div v-if="showInput" class="bg-white p-5 rounded-2xl shadow-lg mb-6 border-2 border-pink-50">
+            <div v-if="showInput" class="bg-white p-5 rounded-2xl shadow-xl mb-6 border-2 border-pink-50">
                 <div class="space-y-3">
-                    <input v-model="newItem.name" type="text" placeholder="成員 (如：石森璃花)" class="w-full border p-2 rounded-lg outline-none focus:ring-2 focus:ring-pink-400">
-                    <input v-model="newItem.series" type="text" placeholder="系列 (如：10th單曲)" class="w-full border p-2 rounded-lg outline-none focus:ring-2 focus:ring-pink-400">
-                    <button @click="addBatchItems" class="w-full bg-pink-500 text-white p-2 rounded-lg font-bold">批次新增 4 種</button>
+                    <input v-model="newItem.name" list="member-list" placeholder="輸入或選擇成員 (如：石森璃花)" class="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-pink-400 text-sm">
+                    <datalist id="member-list">
+                        <option v-for="name in presetMembers" :value="name"></option>
+                    </datalist>
+
+                    <select v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-pink-400 text-sm bg-white">
+                        <option value="">-- 點此選擇內建系列 (共{{presetSeries.length}}項) --</option>
+                        <option v-for="s in presetSeries" :value="s">{{ s }}</option>
+                        <option value="custom">手動輸入其他...</option>
+                    </select>
+
+                    <input v-if="selectedPreset === 'custom' || !selectedPreset" v-model="newItem.series" type="text" placeholder="手動輸入系列名稱" class="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-pink-400 text-sm">
+                    
+                    <button @click="addBatchItems" class="w-full bg-pink-500 text-white p-2.5 rounded-xl font-bold text-sm shadow-lg">快速新增系列 (4種)</button>
                 </div>
                 <div class="flex justify-between mt-4 border-t pt-3">
-                    <button @click="exportData" class="text-[10px] text-blue-500">匯出備份</button>
-                    <button @click="clearAll" class="text-[10px] text-red-300">清空所有</button>
+                    <button @click="exportData" class="text-[10px] text-blue-500 font-bold">備份資料</button>
+                    <button @click="clearAll" class="text-[10px] text-red-300 font-bold">清空資料庫</button>
                 </div>
             </div>
 
-            <div v-if="!currentMember" class="grid grid-cols-2 gap-3">
-                <div v-for="name in memberList" :key="name" @click="currentMember = name" class="bg-white p-5 rounded-xl shadow-sm text-center border border-gray-100">
-                    <div class="font-bold text-gray-700">{{ name }}</div>
-                    <div class="text-[9px] text-gray-400 mt-1">{{ getMemberOwnedCount(name) }} 枚達成</div>
+            <div v-if="!currentMember" class="grid grid-cols-2 gap-3 mt-2">
+                <div v-for="name in memberList" :key="name" @click="currentMember = name" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition text-center">
+                    <div class="font-black text-gray-700 text-base italic">{{ name }}</div>
+                    <div class="text-[9px] text-pink-400 font-bold mt-1 uppercase tracking-widest">{{ getMemberOwnedCount(name) }} Collected</div>
                 </div>
             </div>
 
             <div v-else>
-                <div class="flex items-center justify-between mb-5 px-1">
+                <div class="flex items-center justify-between mb-4 px-1">
                     <div class="flex items-center">
-                        <button @click="currentMember = null" class="text-gray-400 font-bold mr-3 px-2">←</button>
-                        <h2 class="text-xl font-bold text-gray-800">{{ currentMember }}</h2>
+                        <button @click="currentMember = null" class="text-gray-300 font-bold mr-3 text-xl leading-none">‹</button>
+                        <h2 class="text-xl font-black text-gray-800 italic uppercase">{{ currentMember }}</h2>
                     </div>
-                    <button @click="toggleAll" class="text-[10px] text-pink-500 font-bold">
-                        {{ allExpanded ? '全部收合' : '全部展開' }}
-                    </button>
+                    <button @click="toggleAll" class="text-[9px] bg-pink-50 text-pink-500 px-2 py-1 rounded-md font-black uppercase tracking-tighter">{{ allExpanded ? '收合' : '展開' }}</button>
                 </div>
                 
-                <div v-for="(items, seriesName) in memberSeriesGroup" :key="seriesName" class="mb-3 overflow-hidden">
-                    <div @click="toggleSeries(seriesName)" 
-                         class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:bg-gray-50">
-                        <div class="flex items-center">
-                            <span class="text-xs mr-2 transition-transform" :class="{'rotate-90': expandedSeries.has(seriesName)}">▶</span>
-                            <h3 class="text-sm font-bold text-slate-700 truncate max-w-[180px]">{{ seriesName }}</h3>
+                <div v-for="(items, seriesName) in memberSeriesGroup" :key="seriesName" class="mb-2.5">
+                    <div @click="toggleSeries(seriesName)" class="bg-white px-4 py-3.5 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:bg-gray-50">
+                        <div class="flex items-center overflow-hidden">
+                            <span class="text-[8px] mr-2.5 text-pink-400 transition-transform duration-200" :class="{'rotate-90': expandedSeries.has(seriesName)}">▶</span>
+                            <h3 class="text-xs font-bold text-gray-600 truncate mr-2">{{ seriesName }}</h3>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-[10px] font-bold" :class="getProgress(items).count === 4 ? 'text-green-500' : 'text-pink-400'">
-                                {{ getProgress(items).count }}/4
-                            </span>
-                            <button @click.stop="removeSeries(seriesName)" class="text-red-200 hover:text-red-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            </button>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <div class="bg-gray-50 px-2 py-0.5 rounded text-[10px] font-black" :class="getProgress(items).count === 4 ? 'text-green-500' : 'text-pink-400'">{{ getProgress(items).count }}/4</div>
+                            <button @click.stop="removeSeries(seriesName)" class="text-gray-200 hover:text-red-400 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                         </div>
                     </div>
 
                     <transition name="expand">
-                        <div v-if="expandedSeries.has(seriesName)" class="bg-white/50 p-3 rounded-b-xl border-x border-b border-gray-100">
-                            <div class="mb-4 relative rounded-lg overflow-hidden bg-slate-100 min-h-[80px]">
-                                <img v-if="seriesImages[currentMember + seriesName]" :src="seriesImages[currentMember + seriesName]" @click="zoomedImg = seriesImages[currentMember + seriesName]" class="w-full h-auto max-h-[300px] object-contain">
-                                <label v-else class="flex flex-col items-center justify-center py-4 cursor-pointer">
-                                    <span class="text-[10px] text-gray-400">點此上傳展示圖</span>
+                        <div v-if="expandedSeries.has(seriesName)" class="bg-white/40 p-3 rounded-b-xl border-x border-b border-gray-100 mx-1">
+                            <div class="mb-3 relative rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center">
+                                <img v-if="seriesImages[currentMember + seriesName]" :src="seriesImages[currentMember + seriesName]" @click="zoomedImg = seriesImages[currentMember + seriesName]" class="w-full h-auto max-h-[350px] object-contain">
+                                <label v-else class="py-5 cursor-pointer w-full text-center">
+                                    <span class="text-[10px] text-gray-300 font-bold uppercase tracking-widest">+ Upload Set Photo</span>
                                     <input type="file" class="hidden" @change="(e) => handleSeriesImageUpload(e, currentMember + seriesName)" accept="image/*">
                                 </label>
-                                <label v-if="seriesImages[currentMember + seriesName]" class="absolute bottom-1 right-1 bg-white/70 px-2 py-0.5 rounded text-[8px]">
-                                    更換 <input type="file" class="hidden" @change="(e) => handleSeriesImageUpload(e, currentMember + seriesName)" accept="image/*">
-                                </label>
                             </div>
-
-                            <div class="photo-grid">
-                                <div v-for="item in items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border-2" :class="ownedIds.has(item.id) ? 'border-pink-500 bg-pink-50 text-pink-500' : 'border-gray-200 bg-white text-gray-300'">
-                                    {{ item.type }}
-                                </div>
+                            <div class="photo-grid px-1 pb-1">
+                                <div v-for="item in items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border-2" :class="ownedIds.has(item.id) ? 'border-pink-500 bg-pink-500 text-white shadow-sm' : 'border-gray-100 bg-white text-gray-300'">{{ item.type }}</div>
                             </div>
                         </div>
                     </transition>
                 </div>
             </div>
         </main>
-
-        <div v-if="zoomedImg" @click="zoomedImg = null" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
-            <img :src="zoomedImg" class="max-w-full max-h-full object-contain">
-        </div>
+        <div v-if="zoomedImg" @click="zoomedImg = null" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-2"><img :src="zoomedImg" class="max-w-full max-h-full object-contain"></div>
     </div>
 
     <script>
@@ -122,14 +104,9 @@
         createApp({
             data() {
                 return {
-                    showInput: false,
-                    currentMember: null,
-                    zoomedImg: null,
-                    newItem: { name: '', series: '' },
-                    rawItems: [],
-                    ownedIds: new Set(),
-                    seriesImages: {},
-                    expandedSeries: new Set() // 追蹤哪些選單是打開的
+                    presetMembers: ['石森璃花', '遠藤理子', '小田倉麗奈', '小島凪紗', '谷口愛季', '中嶋優月', '的野美青', '向井純葉', '村井優', '村山美羽', '山下瞳月', '田村保乃', '山﨑天', '森田ひかる', '守屋麗奈', '藤吉夏鈴'],
+                    presetSeries: ['5th Single 「桜月」封入', '「夏の近道」 MV衣装', '「夏の近道」 MV 制服', '「BAN」 MV衣装', '2023年 冬私服コーデ', '三期生ブックレット衣装', 'スーツコーデ', 'カラーコーデ', '6th Single 「Start over!」封入', '「3rd TOUR 2023」 オープニング衣装', '「Start over!」 ジャケット写真衣装', '「静寂の暴力」 MV衣装', 'サマーワンピース', 'デニムコーデ', '2023年 ハロウィン衣装', '7th Single 「承認欲求」封入', '2023年 クリスマスサンタ衣装', '「3rd TOUR 2023」 白スーツ衣装', '2023年夏フェス衣装', "「Nobody's fault」MV衣装", '2023年 読書コーデ', '2024年 振袖衣装', '「承認欲求」 ジャケット写真衣装', '「マモリビト」 MV衣装', '3rd Single BACKS LIVE!!', 'おうちコーデ', 'ジャンプスーツ', '8th Single 「何歳の頃に戻りたいのか?」 封入', '「3rd TOUR 2023」 ピンク衣装', '[3rd YEAR ANNIVERSARY LIVE」 ライブ衣装 (4th TOUR 发售)', '「何歳の頃に戻りたいのか?」 ジャケット写真衣装', '2024年 春私服コーデ', '「何度 LOVE SONG の歌詞を読み返しただろう」 MV衣装', '「7th Single BACKS LIVE!!」 オープニング衣装', '「油を注せ!」 MV衣装', '「小林由依 卒業コンサート」 ライブ衣装', 'カラーデニム', '2024年浴衣', '「小林由依 卒業コンサート」 赤衣装', '「3rd TOUR 2023」 ライブ衣装', '【会場予約特典】 東京ドーム限定メンバー生写真(チュウ)', '東京ドーム完売御礼記念!! ライブ会場撮りおろしプレミアム生写真(ウエスト)', '9th Single 「自業自得」封入', '麦わら帽子コーデ', '2023年 年末歌唱衣装', '「自業自得」 ジャケット写真衣装', '「8th Single BACKS LIVE!!」 ライブ衣装', '「愛し合いなさい」 MV カラフル衣装', '「愛し合いなさい」 MV 黒衣装', 'Tシャツコーデ', '「引きこもる時間はない」 MV 衣装', '「4th ARENA TOUR 2024」 ライブ衣装', 'ワイシャツコーデ', '2024年 ハロウィン衣装', 'カラーニットコーデ', '10th Single I want tomorrow to come」封入', '2024年 クリスマスサンタ衣装', '[3rd YEAR ANNIVERSARY LIVE」 ライブ衣装 (4th YEAR 发售)', '「4th ARENA TOUR IN 東京ドーム」 オープニング衣装', 'どうぶつ着ぐるみ', '「僕は僕を好きになれない」 MV衣装', '「9th Single BACKS LIVE!!」 オープニング衣装', 'マフラーコーデ', '[I want tomorrow to come」 ジャケット写真衣装', '「本質的なこと」 MV衣装', '福袋 2025 「東京ドーム」 オープニング衣装 新カット', '2025年振袖', '2023年 年末衣装', 'いぬみみコーデ', '11th Single 「UDAGAWA GENERATION」封入', '「UDAGAWA GENERATION」 ジャケット写真衣装', '「UDAGAWA GENERATION」MV衣装', '「Nightmare 症候群」MV衣装', '2024年夏フェス衣装', 'モードコーデ', '冬私服コーデ', '「4th ARENA TOUR」 オープニング衣装', '「4th YEAR ANNIVERSARY LIVE」 ライブ衣装', '「4th ARENA TOUR」 ライブ衣装', 'ネクタイコーデ', '2nd Album 「Addiction」封入', '「Addiction」 MV衣装', '「三期生ライブ」 オープニング衣装', 'レザージャケットコーデ', '12th Single 「Make or Break」封入', '2025年浴衣', '「4th ARENA TOUR IN 東京ドーム」 ライブ衣装', '2024年 夏フェス衣装', '「港區パセリ」 MV衣装', '[10th Single BACKS LIVE!!」 ライブ衣装', 'ポロシャツコーデ', 'クラシックコーデ', '「Make or Break」 ジャケット写真衣装', '「5th TOUR 2025 Addiction”」 ライブ衣装"', '「三期生ライブ」衣装', 'チェックコーデ', '「12th Single BACKS LIVE!!」ライブ衣装', '「5th TOUR 2025 “Addiction”」黑衣装', 'パイレーツ衣装', '冬服', '「Unhappy birthday構文」MV衣装', '「Unhappy birthday構文」ジャケット写真衣装', '「12th Single BACKS LIVE!!」黑衣装', '2025年 サンタ衣装', 'スタイリング制服', '2026年 振袖', 'ジャージ', '2026年 バレンタインコーデ', '福袋 2026 「港區パセリ」 MV新カット'],
+                    showInput: false, selectedPreset: '', currentMember: null, zoomedImg: null, newItem: { name: '', series: '' }, rawItems: [], ownedIds: new Set(), seriesImages: {}, expandedSeries: new Set()
                 }
             },
             computed: {
@@ -144,30 +121,19 @@
                     }, {});
                 },
                 allExpanded() {
-                    const totalSeries = Object.keys(this.memberSeriesGroup).length;
-                    return totalSeries > 0 && this.expandedSeries.size === totalSeries;
+                    const total = Object.keys(this.memberSeriesGroup).length;
+                    return total > 0 && this.expandedSeries.size === total;
                 }
             },
             mounted() { this.loadData(); },
             methods: {
-                toggleSeries(name) {
-                    if (this.expandedSeries.has(name)) this.expandedSeries.delete(name);
-                    else this.expandedSeries.add(name);
-                },
-                toggleAll() {
-                    if (this.allExpanded) {
-                        this.expandedSeries.clear();
-                    } else {
-                        Object.keys(this.memberSeriesGroup).forEach(name => this.expandedSeries.add(name));
-                    }
-                },
+                onSeriesSelect() { if (this.selectedPreset !== 'custom' && this.selectedPreset !== '') this.newItem.series = this.selectedPreset; else this.newItem.series = ''; },
+                toggleSeries(name) { if (this.expandedSeries.has(name)) this.expandedSeries.delete(name); else this.expandedSeries.add(name); },
+                toggleAll() { if (this.allExpanded) this.expandedSeries.clear(); else Object.keys(this.memberSeriesGroup).forEach(n => this.expandedSeries.add(n)); },
                 loadData() {
-                    const savedOwned = localStorage.getItem('owned_photos');
-                    if (savedOwned) this.ownedIds = new Set(JSON.parse(savedOwned));
-                    const savedItems = localStorage.getItem('raw_items');
-                    if (savedItems) this.rawItems = JSON.parse(savedItems);
-                    const savedSeriesImgs = localStorage.getItem('series_images');
-                    if (savedSeriesImgs) this.seriesImages = JSON.parse(savedSeriesImgs);
+                    const savedOwned = localStorage.getItem('owned_photos'); if (savedOwned) this.ownedIds = new Set(JSON.parse(savedOwned));
+                    const savedItems = localStorage.getItem('raw_items'); if (savedItems) this.rawItems = JSON.parse(savedItems);
+                    const savedSeriesImgs = localStorage.getItem('series_images'); if (savedSeriesImgs) this.seriesImages = JSON.parse(savedSeriesImgs);
                 },
                 addBatchItems() {
                     if (!this.newItem.name || !this.newItem.series) return;
@@ -177,41 +143,23 @@
                         this.rawItems.push({ id, name: this.newItem.name, series: this.newItem.series, type });
                     });
                     this.saveData();
-                    this.newItem.series = ''; 
                 },
-                removeSeries(seriesName) {
-                    if(confirm(`確定刪除？`)) {
-                        this.rawItems = this.rawItems.filter(i => !(i.name === this.currentMember && i.series === seriesName));
-                        this.expandedSeries.delete(seriesName);
-                        this.saveData();
-                    }
-                },
+                removeSeries(seriesName) { if(confirm(`Delete "${seriesName}"?`)) { this.rawItems = this.rawItems.filter(i => !(i.name === this.currentMember && i.series === seriesName)); this.expandedSeries.delete(seriesName); this.saveData(); } },
                 handleSeriesImageUpload(event, key) {
-                    const file = event.target.files[0];
-                    if (!file) return;
+                    const file = event.target.files[0]; if (!file) return;
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        const img = new Image();
-                        img.onload = () => {
-                            const canvas = document.createElement('canvas');
-                            const MAX_WIDTH = 1000;
-                            let width = img.width; let height = img.height;
-                            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                            canvas.width = width; canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-                            this.seriesImages[key] = canvas.toDataURL('image/jpeg', 0.6);
-                            this.saveData();
+                        const img = new Image(); img.onload = () => {
+                            const canvas = document.createElement('canvas'); const MAX_WIDTH = 1000;
+                            let width = img.width; let height = img.height; if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                            canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+                            this.seriesImages[key] = canvas.toDataURL('image/jpeg', 0.6); this.saveData();
                         };
                         img.src = e.target.result;
                     };
                     reader.readAsDataURL(file);
                 },
-                toggleItem(id) {
-                    if (this.ownedIds.has(id)) this.ownedIds.delete(id);
-                    else this.ownedIds.add(id);
-                    this.saveData();
-                },
+                toggleItem(id) { if (this.ownedIds.has(id)) this.ownedIds.delete(id); else this.ownedIds.add(id); this.saveData(); },
                 getMemberOwnedCount(name) { return this.rawItems.filter(i => i.name === name && this.ownedIds.has(i.id)).length; },
                 getProgress(items) { return { count: items.filter(i => this.ownedIds.has(i.id)).length }; },
                 saveData() {
@@ -222,12 +170,9 @@
                 exportData() {
                     const data = JSON.stringify(localStorage);
                     const blob = new Blob([data], {type: 'text/plain'});
-                    const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = `photo_backup.txt`;
-                    a.click();
+                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `photo_backup.txt`; a.click();
                 },
-                clearAll() { if(confirm('確定清除？')) { localStorage.clear(); location.reload(); } }
+                clearAll() { if(confirm('Clear all data?')) { localStorage.clear(); location.reload(); } }
             }
         }).mount('#app')
     </script>
