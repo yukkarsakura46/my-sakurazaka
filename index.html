@@ -7,9 +7,8 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 強制使用高品質中日文通用字體，取消斜體 */
         * {
-            font-family: "Noto Sans TC", "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Microsoft JhengHei", sans-serif !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", sans-serif !important;
             font-style: normal !important;
         }
         .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
@@ -21,68 +20,116 @@
         }
         .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; max-height: 1500px; overflow: hidden; }
         .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
-        
-        /* 縮小期別分類標籤字體 */
-        .section-header { font-size: 8px; font-weight: 900; color: #94a3b8; letter-spacing: 0.1em; margin: 15px 0 8px 4px; border-left: 2px solid #f472b6; padding-left: 6px; text-transform: uppercase; }
-        
+        .section-header { 
+            font-size: 9px; 
+            font-weight: 900; 
+            color: #94a3b8; 
+            letter-spacing: 0.1em; 
+            margin: 15px 0 8px 4px; 
+            border-left: 2px solid #f472b6; 
+            padding-left: 6px; 
+            text-transform: uppercase; 
+        }
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);
             z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px;
         }
-        .group-tag { font-size: 8px; background: #fee2e2; color: #ef4444; padding: 1px 4px; border-radius: 4px; margin-left: 5px; vertical-align: middle; font-weight: bold; }
+        .group-tag { font-size: 8px; background: #fee2e2; color: #ef4444; padding: 1px 4px; border-radius: 4px; margin-left: 5px; font-weight: bold; }
+        .tab-btn { font-size: 11px; font-weight: 900; padding: 6px 16px; border-radius: 99px; transition: all 0.2s; }
+        .tab-active { background: #f472b6; color: white; box-shadow: 0 4px 12px rgba(244, 114, 182, 0.3); }
+        .tab-inactive { color: #94a3b8; }
+        .mode-toggle { display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px; margin-bottom: 15px; }
+        .mode-btn { flex: 1; text-align: center; font-size: 10px; font-weight: 800; padding: 6px; border-radius: 8px; transition: all 0.2s; }
+        .mode-btn-active { background: white; color: #f472b6; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .mode-btn-inactive { color: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-10">
+<body class="bg-slate-50 min-h-screen pb-20">
     <div id="app">
         <nav class="bg-white shadow-sm p-4 sticky top-0 z-30 border-b border-gray-100">
             <div class="max-w-xl mx-auto flex justify-between items-center">
-                <h1 class="text-xl font-black text-gray-800 tracking-tight cursor-pointer" @click="currentMember = null">🌸 櫻坂46</h1>
+                <h1 class="text-xl font-black text-gray-800 tracking-tight cursor-pointer" @click="currentMember = null; viewMode = 'member'">🌸 櫻坂46</h1>
                 <button @click="showInput = true" class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold shadow-lg active:scale-95 transition tracking-widest">管理面板</button>
             </div>
         </nav>
 
         <div v-if="showInput" class="modal-overlay" @click.self="showInput = false">
-            <div class="bg-white w-full max-w-sm p-6 rounded-3xl shadow-2xl border-t-4 border-pink-400 relative">
+            <div class="bg-white w-full max-w-sm p-6 rounded-3xl shadow-2xl border-t-4 border-pink-400 relative overflow-y-auto max-h-[90vh]">
                 <button @click="showInput = false" class="absolute top-4 right-4 text-gray-300 hover:text-gray-500 font-bold">✕</button>
                 <h3 class="text-base font-black text-gray-800 mb-4">管理面板</h3>
                 
+                <div class="mode-toggle">
+                    <button @click="addMode = 'member'" class="mode-btn" :class="addMode === 'member' ? 'mode-btn-active' : 'mode-btn-inactive'">按成員新增</button>
+                    <button @click="addMode = 'series'" class="mode-btn" :class="addMode === 'series' ? 'mode-btn-active' : 'mode-btn-inactive'">按系列新增</button>
+                </div>
+
                 <div class="space-y-3 text-xs">
-                    <select v-model="selectedGen" class="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-pink-400 bg-white font-bold text-gray-700">
-                        <option value="">-- 1. 選擇期別 --</option>
-                        <option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option>
-                    </select>
-                    <select v-if="selectedGen" v-model="newItem.name" class="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-pink-400 bg-white font-bold text-gray-700">
-                        <option value="">-- 2. 選擇成員 --</option>
-                        <option v-for="name in presetMembers[selectedGen]" :key="name" :value="name">{{ name }}</option>
-                    </select>
-                    <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-pink-400 bg-white text-gray-700">
-                        <option value="">-- 3. 選擇系列分類 --</option>
-                        <option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option>
-                        <option value="custom_cat">＋ 手動輸入新分類...</option>
-                    </select>
-                    <select v-if="selectedCategory && selectedCategory !== 'custom_cat'" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-pink-400 bg-white text-gray-700">
-                        <option value="">-- 4. 選擇系列 (可重複新增) --</option>
-                        <option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option>
-                        <option value="custom_series">＋ 手動輸入新系列...</option>
-                    </select>
+                    <template v-if="addMode === 'member'">
+                        <select v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold">
+                            <option value="">-- 1. 選擇期別 --</option>
+                            <option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option>
+                        </select>
+                        <select v-if="selectedGen" v-model="newItem.name" class="w-full border p-2.5 rounded-xl bg-white font-bold">
+                            <option value="">-- 2. 選擇成員 --</option>
+                            <option v-for="name in presetMembers[selectedGen]" :key="name" :value="name">{{ name }}</option>
+                        </select>
+                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white">
+                            <option value="">-- 3. 選擇分類 --</option>
+                            <option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option>
+                        </select>
+                        <select v-if="selectedCategory && selectedCategory !== 'custom_cat'" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white">
+                            <option value="">-- 4. 選擇系列 --</option>
+                            <option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option>
+                            <option value="custom_series">＋ 手動輸入系列...</option>
+                        </select>
+                    </template>
+
+                    <template v-else>
+                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white">
+                            <option value="">-- 1. 選擇分類 --</option>
+                            <option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option>
+                        </select>
+                        <select v-if="selectedCategory && selectedCategory !== 'custom_cat'" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white">
+                            <option value="">-- 2. 選擇系列 --</option>
+                            <option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option>
+                        </select>
+                        <select v-if="selectedPreset" v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold">
+                            <option value="">-- 3. 選擇期別 --</option>
+                            <option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option>
+                        </select>
+                        <div v-if="selectedGen && selectedPreset" class="border rounded-xl p-3 bg-slate-50 max-h-40 overflow-y-auto">
+                            <p class="text-[10px] text-gray-400 mb-2 font-bold uppercase">4. 勾選要新增的成員：</p>
+                            <div v-for="name in presetMembers[selectedGen]" :key="name" class="flex items-center mb-2">
+                                <input type="checkbox" :id="'check-'+name" :value="name" v-model="batchMemberNames" class="mr-2 accent-pink-500">
+                                <label :for="'check-'+name" class="font-bold text-gray-700">{{ name }}</label>
+                            </div>
+                        </div>
+                    </template>
+
                     <input v-if="selectedCategory === 'custom_cat'" v-model="newItem.category" type="text" placeholder="手動輸入分類" class="w-full border p-2.5 rounded-xl">
-                    <input v-if="selectedPreset === 'custom_series' || selectedCategory === 'custom_cat'" v-model="newItem.series" type="text" placeholder="手動輸入系列名稱" class="w-full border p-2.5 rounded-xl">
-                    <button @click="addBatchItems" class="w-full bg-pink-500 text-white p-3 rounded-xl font-bold shadow-lg active:scale-95 transition mt-2 tracking-wide">確認新增並跳轉</button>
+                    <input v-if="selectedPreset === 'custom_series' || selectedCategory === 'custom_cat'" v-model="newItem.series" type="text" placeholder="手動輸入系列" class="w-full border p-2.5 rounded-xl">
+                    
+                    <button @click="addBatchItems" class="w-full bg-pink-500 text-white p-3 rounded-xl font-bold shadow-lg active:scale-95 transition mt-2">確認新增</button>
                 </div>
                 
                 <div class="flex justify-between mt-6 border-t pt-4 gap-2">
                     <div class="flex gap-2">
-                        <button @click="exportData" class="text-[9px] text-blue-500 font-bold border border-blue-100 px-3 py-1.5 rounded-lg">備份</button>
-                        <label class="text-[9px] text-green-600 font-bold border border-green-100 px-3 py-1.5 rounded-lg cursor-pointer">還原<input type="file" class="hidden" @change="importData" accept=".txt"></label>
+                        <button @click="exportData" class="text-[9px] text-blue-500 font-bold border border-blue-100 px-3 py-1.5 rounded-lg tracking-tighter">備份</button>
+                        <label class="text-[9px] text-green-600 font-bold border border-green-100 px-3 py-1.5 rounded-lg cursor-pointer tracking-tighter">還原<input type="file" class="hidden" @change="importData" accept=".txt"></label>
                     </div>
-                    <button @click="clearAll" class="text-[9px] text-red-300 font-bold px-2">清空資料</button>
+                    <button @click="clearAll" class="text-[9px] text-red-300 font-bold px-2 tracking-tighter">清空資料</button>
                 </div>
             </div>
         </div>
 
         <main class="max-w-xl mx-auto p-3">
-            <div v-if="!currentMember">
+            <div v-if="!currentMember" class="flex justify-center gap-4 my-4">
+                <button @click="viewMode = 'member'" class="tab-btn" :class="viewMode === 'member' ? 'tab-active' : 'tab-inactive'">成員模式</button>
+                <button @click="viewMode = 'series'" class="tab-btn" :class="viewMode === 'series' ? 'tab-active' : 'tab-inactive'">系列模式</button>
+            </div>
+
+            <div v-if="!currentMember && viewMode === 'member'">
                 <div v-for="(members, gen) in presetMembers" :key="gen" class="mb-6">
                     <div v-if="getGenActiveCount(gen) > 0">
                         <h2 class="section-header">{{ gen }}</h2>
@@ -96,7 +143,27 @@
                 </div>
             </div>
 
-            <div v-else>
+            <div v-if="!currentMember && viewMode === 'series'">
+                <div v-for="(seriesObj, catName) in itemsBySeries" :key="catName" class="mb-8">
+                    <h2 class="section-header">{{ catName }}</h2>
+                    <div v-for="(batches, seriesName) in seriesObj" :key="seriesName" class="mb-4 bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden">
+                        <div class="bg-slate-50 px-4 py-2 border-b border-gray-100"><h3 class="text-[11px] font-black text-gray-600 truncate">{{ seriesName }}</h3></div>
+                        <div class="p-3 space-y-3">
+                            <div v-for="batch in batches" :key="batch.batchId" class="flex items-center justify-between gap-3">
+                                <div @click="currentMember = batch.memberName" class="shrink-0 cursor-pointer">
+                                    <span class="text-[11px] font-bold text-gray-700">{{ batch.memberName }}</span>
+                                    <span v-if="batch.groupIndex > 1" class="group-tag">SET {{ batch.groupIndex }}</span>
+                                </div>
+                                <div class="photo-grid flex-1">
+                                    <div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border" :class="ownedIds.has(item.id) ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-gray-100 text-gray-200'" style="font-size: 8px;">{{ item.type }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="currentMember">
                 <div class="flex flex-col gap-4 mb-6 pt-2">
                     <div class="flex items-center justify-between px-1">
                         <div class="flex items-center gap-2">
@@ -116,7 +183,6 @@
                 
                 <div v-for="(batches, categoryName) in memberItemsGrouped" :key="categoryName" class="mb-8">
                     <div class="px-2 mb-3"><span class="text-[8px] font-black bg-slate-200 text-slate-500 px-2 py-1 rounded uppercase tracking-widest">{{ categoryName }}</span></div>
-                    
                     <div v-for="batch in batches" :key="batch.batchId" class="mb-2.5">
                         <div @click="toggleSeries(batch.batchId)" class="bg-white px-4 py-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:bg-gray-50">
                             <div class="flex items-center overflow-hidden">
@@ -135,19 +201,19 @@
                             <div v-if="expandedSeries.has(batch.batchId)" class="bg-white/40 p-4 rounded-b-2xl border-x border-b border-gray-100 mx-1">
                                 <div class="mb-4 relative rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center min-h-[120px] group">
                                     <div v-if="seriesImages[batch.batchId]" class="relative w-full text-center">
-                                        <img :src="seriesImages[batch.batchId]" @click="zoomedImg = seriesImages[batch.batchId]" class="w-full h-auto max-h-[450px] object-contain cursor-zoom-in">
+                                        <img :src="seriesImages[batch.batchId]" @click="zoomedImg = seriesImages[batch.batchId]" class="w-full h-auto max-h-[450px] object-contain">
                                         <button @click.stop="removeImage(batch.batchId)" class="absolute top-2 right-2 bg-red-500/80 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                                     </div>
                                     <label v-else class="py-8 cursor-pointer w-full text-center"><span class="text-[11px] text-gray-300 font-bold uppercase tracking-widest">+ 上傳展示圖</span><input type="file" class="hidden" @change="(e) => handleSeriesImageUpload(e, batch.batchId)" accept="image/*"></label>
                                 </div>
-                                <div class="photo-grid">
-                                    <div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border-2" :class="ownedIds.has(item.id) ? 'border-pink-500 bg-pink-500 text-white shadow-md' : 'border-gray-100 bg-white text-gray-300'">{{ item.type }}</div>
-                                </div>
+                                <div class="photo-grid"><div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border-2" :class="ownedIds.has(item.id) ? 'border-pink-500 bg-pink-500 text-white shadow-md' : 'border-gray-100 bg-white text-gray-300'">{{ item.type }}</div></div>
                             </div>
                         </transition>
                     </div>
                 </div>
             </div>
+
+            <div v-if="!memberList.length" class="text-center py-24 text-slate-300 font-bold italic"><div class="text-3xl mb-4 opacity-20">🌸</div>點擊右上角 管理面板 開始建立資料庫</div>
         </main>
         <div v-if="zoomedImg" @click="zoomedImg = null" class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-2"><img :src="zoomedImg" class="max-w-full max-h-full object-contain"></div>
     </div>
@@ -157,80 +223,77 @@
         createApp({
             data() {
                 return {
-                    presetMembers: {"二期生": ["遠藤光莉", "大園玲", "大沼晶保", "幸阪茉里乃", "武元唯衣", "田村保乃", "藤吉夏鈴", "増本綺良", "松田里奈", "森田ひかる", "守屋麗奈", "山﨑天"], "三期生": ["石森璃花", "遠藤理子", "小田倉麗奈", "小島凪紗", "谷口愛季", "中嶋優月", "的野美青", "向井純葉", "村井優", "村山美羽", "山下瞳月"], "四期生": ["浅井恋乃未", "稲熊ひな", "勝又春", "佐藤愛桜", "中川智尋", "松本和子", "目黑陽色", "山川宇衣", "山田桃實"], "畢業生": ["松平璃子", "守屋茜", "渡邉梨加", "渡邉理佐", "原田葵", "尾關梨香", "菅井友香", "關有美子", "土生瑞穂", "小林由依", "齋藤冬優花", "上村莉菜", "小池美波", "井上梨名"]},
-                    categorizedSeries: {"封入": ["5th Single 「桜月」封入", "6th Single 「Start over!」封入", "7th Single 「承認欲求」封入", "8th Single 「何歳の頃に戻りたいのか?」 封入", "9th Single 「自業自得」封入", "10th Single「 I want tomorrow to come」封入", "11th Single 「UDAGAWA GENERATION」封入", "2nd Album 「Addiction」封入", "12th Single 「Make or Break」封入", "13th Single 「Unhappy birthday構文」封入", "14th Single 「The growing up train」封入"], "MV衣裝": ["「夏の近道」 MV衣装", "「夏の近道」 MV制服", "「BAN」 MV衣装", "「静寂の暴力」 MV衣装", "「Nobody's fault」MV衣装", "「承認欲求」MV衣装", "「マモリビト」 MV衣装", "「何歳の頃に戻りたいのか?」MV衣装", "「何度 LOVE SONG の歌詞を読み返しただろう」 MV衣装", "「油を注せ!」 MV衣装", "「自業自得」MV衣装", "「愛し合いなさい」 MV 衣装", "「引きこもる時間はない」 MV 衣装", "「I want tomorrow to come」MV衣装", "「本質的なこと」 MV衣装", "「僕は僕を好きになれない」 MV衣装", "「UDAGAWA GENERATION」MV衣装", "「Nothing Special」MV衣装", "「Nightmare 症候群」MV衣装", "「Addiction」 MV衣装", "「Make or Break」 MV衣装", "「港區パセリ」 MV衣装", "「死んだふり」MV衣装", "「Unhappy birthday構文」MV衣装", "「木枯らしは泣かない」MV衣装", "「Alter ego」MV衣装", "「The growing up train」MV衣装"], "封面照": ["「Start over!」 ジャケット写真衣装", "「承認欲求」ジャケット写真衣装", "「何歳の頃に戻りたいのか?」ジャケット写真衣装", "「自業自得」ジャケット写真衣装", "「I want tomorrow to come」ジャケット写真衣装", "「UDAGAWA GENERATION」ジャケット写真衣装", "「Make or Break」ジャケット写真衣装", "「Unhappy birthday構文」ジャケット写真衣装", "「The growing up train」ジャケット写真衣装"], "LIVE衣裝": ["三期生ブックレット衣装", "「3rd TOUR 2023」 オープニング衣装", "「3rd TOUR 2023」 白スーツ衣装", "2023年夏フェス衣装", "3rd Single BACKS LIVE!!", "「3rd TOUR 2023」 ピンク衣装", "「3rd YEAR ANNIVERSARY LIVE」 ライブ衣装", "「7th Single BACKS LIVE!!」 オープニング衣装", "「小林由依 卒業コンサート」 衣装", "「小林由依 卒業コンサート」 赤衣装", "「3rd TOUR 2023」 衣装", "2023年 年末歌唱衣装", "「8th Single BACKS LIVE!!」 衣装", "「4th ARENA TOUR 2024」 衣装", "「3rd YEAR ANNIVERSARY LIVE」 衣装", "「4th ARENA TOUR IN 東京ドーム」 衣装", "「9th Single BACKS LIVE!!」 衣装", "2023年 年末衣装", "2024年夏フェス衣装", "「4th ARENA TOUR」 衣装", "「4th YEAR ANNIVERSARY LIVE」 衣装", "「4th ARENA TOUR」 衣装", "「三期生ライブ」 衣装", "「4th ARENA TOUR IN 東京ドーム」 衣装", "「10th Single BACKS LIVE!!」 衣装", "「5th TOUR 2025 Addiction」 衣装", "「三期生ライブ」衣装", "「12th Single BACKS LIVE!!」衣装", "「5th TOUR 2025 Addiction」黑衣装", "「12th Single BACKS LIVE!!」黑衣装"], "其他": ["2023年 冬私服コーデ", "スーツコーデ", "カラーコーデ", "サマーワンピース", "デニムコーデ", "2023年 ハロウィン衣装", "2023年 クリスマスサンタ衣装", "2023年 読書コーデ", "2024年 振袖衣装", "おうちコーデ", "ジャンプスーツ", "2024年 春私服コーデ", "カラーデニム", "2024年浴衣", "麥わら帽子コーデ", "Tシャツコーデ", "ワイシャツコーデ", "2024年 ハロウィン衣装", "カラーニットコーデ", "2024年 クリスマスサンタ衣装", "どうぶつ着ぐるみ", "マフラーコーデ", "2025年振袖", "いぬみみコーデ", "モードコーデ", "冬私服コーデ", "ネクタイコーデ", "レザージャケットコーデ", "2025年浴衣", "ポロシャツコーデ", "クラシックコーデ", "チェックコーデ", "パイレーツ衣装", "冬服", "2025年 サンタ衣装", "スタイリング制服", "2026年 振袖", "ジャージ", "2026年 バレンタインコーデ"], "特殊": ["【会場予約特典】 東京ドーム限定成員生寫真", "東京ドーム完賣御禮紀念!! ライブ會場撮りおろしプレミアム生寫真", "福袋 2025 「4th ARENA TOUR IN 東京ドーム」 オープニング衣装", "福袋 2026 MV衣装"]},
-                    showInput: false, selectedGen: '', selectedCategory: '', selectedPreset: '', currentMember: null, newItem: { name: '', series: '', category: '' }, rawItems: [], ownedIds: new Set(), seriesImages: {}, expandedSeries: new Set(), zoomedImg: null
+                    viewMode: 'member', addMode: 'member',
+                    selectedGen: '', selectedCategory: '', selectedPreset: '', batchMemberNames: [],
+                    presetMembers: {"二期生": ["遠藤光莉", "大園玲", "大沼晶保", "幸阪茉里乃", "武元唯衣", "田村保乃", "藤吉夏鈴", "増本綺良", "松田里奈", "森田ひかる", "守屋麗奈", "山﨑天"], "三期生": ["石森璃花", "遠藤理子", "小田倉麗奈", "小島凪紗", "谷口愛季", "中嶋優月", "的野美青", "向井純葉", "村井優", "村山美羽", "山下瞳月"], "四期生": ["浅井恋乃未", "稲熊ひな", "勝又春", "佐藤愛桜", "中川智尋", "松本和子", "目黒陽色", "山川宇衣", "山田桃実"], "畢業生": ["松平璃子", "守屋茜", "渡邉梨加", "渡邉理佐", "原田葵", "尾関梨香", "菅井友香", "関有美子", "土生瑞穂", "小林由依", "齋藤冬優花", "上村莉菜", "小池美波", "井上梨名"]},
+                    categorizedSeries: {"封入": ["5th Single 「桜月」封入", "6th Single 「Start over!」封入", "7th Single 「承認欲求」封入", "8th Single 「何歳の頃に戻りたいのか?」 封入", "9th Single 「自業自得」封入", "10th Single「 I want tomorrow to come」封入", "11th Single 「UDAGAWA GENERATION」封入", "2nd Album 「Addiction」封入", "12th Single 「Make or Break」封入", "13th Single 「Unhappy birthday構文」封入", "14th Single 「The growing up train」封入"], "MV衣裝": ["「夏の近道」 MV衣装", "「夏の近道」 MV制服", "「BAN」 MV衣装", "「静寂の暴力」 MV衣装", "「Nobody's fault」MV衣装", "「承認欲求」MV衣装", "「マモリビト」 MV衣装", "「何歳の頃に戻りたいのか?」MV衣装", "「何度 LOVE SONG の歌詞を読み返しただろう」 MV衣装", "「油を注せ!」 MV衣装", "「自業自得」MV衣装", "「愛し合いなさい」 MV衣装", "「引きこもる時間はない」 MV衣装", "「I want tomorrow to come」MV衣装", "「本質的なこと」 MV衣装", "「僕は僕を好きになれない」 MV衣装", "「UDAGAWA GENERATION」MV衣装", "「Nothing Special」MV衣装", "「Nightmare 症候群」MV衣装", "「Addiction」 MV衣装", "「Make or Break」 MV衣装", "「港區パセリ」 MV衣装", "「死んだふり」MV衣装", "「Unhappy birthday構文」MV衣装", "「木枯らしは泣かない」MV衣装", "「Alter ego」MV衣装", "「The growing up train」MV衣装"], "封面照": ["「Start over!」 ジャケット写真衣装", "「承認欲求」ジャケット写真衣装", "「何歳の頃に戻りたいのか?」ジャケット写真衣装", "「自業自得」ジャケット写真衣装", "「I want tomorrow to come」ジャケット写真衣装", "「UDAGAWA GENERATION」ジャケット写真衣装", "「Make or Break」ジャケット写真衣装", "「Unhappy birthday構文」ジャケット写真衣装", "「The growing up train」ジャケット写真衣装"], "LIVE衣裝": ["三期生ブックレット衣装", "「3rd TOUR 2023」 オープニング衣装", "「3rd TOUR 2023」 白スーツ衣装", "2023年夏フェス衣装", "3rd Single BACKS LIVE!!", "「3rd TOUR 2023」 ピンク衣装", "「3rd YEAR ANNIVERSARY LIVE」 ライブ衣装", "「7th Single BACKS LIVE!!」 オープニング衣装", "「小林由依 卒業コンサート」 衣装", "「小林由依 卒業コンサート」 赤衣装", "「3rd TOUR 2023」 衣装", "2023年 年末歌唱衣装", "「8th Single BACKS LIVE!!」 衣装", "「4th ARENA TOUR 2024」 衣装", "「3rd YEAR ANNIVERSARY LIVE」 衣装", "「4th ARENA TOUR IN 東京ドーム」 オープニング衣装", "「9th Single BACKS LIVE!!」 衣装", "2023年 年末衣装", "2024年夏フェス衣装", "「4th ARENA TOUR」 衣装", "「4th YEAR ANNIVERSARY LIVE」 衣装", "「4th ARENA TOUR」 衣装", "「三期生ライブ」 衣装", "「4th ARENA TOUR IN 東京ドーム」 衣装", "「10th Single BACKS LIVE!!」 衣装", "「5th TOUR 2025 Addiction」 衣装", "「三期生ライブ」衣装", "「12th Single BACKS LIVE!!」衣装", "「5th TOUR 2025 Addiction」黑衣装", "「12th Single BACKS LIVE!!」黑衣装"], "其他": ["2023年 冬私服コーデ", "スーツコーデ", "カラーコーデ", "サマーワンピース", "デニムコーデ", "2023年 ハロウィン衣装", "2023年 クリスマスサンタ衣装", "2023年 読書コーデ", "2024年 振袖衣装", "おうちコーデ", "ジャンプスーツ", "2024年 春私服コーデ", "カラーデニム", "2024年浴衣", "麥わら帽子コーデ", "Tシャツコーデ", "ワイシャツコーデ", "2024年 ハロウィン衣装", "カラーニットコーデ", "2024年 クリスマスサンタ衣装", "どうぶつ着ぐるみ", "マフラーコーデ", "2025年振袖", "いぬみみコーデ", "モードコーデ", "冬私服コーデ", "ネクタイコーデ", "レザージャケットコーデ", "2025年浴衣", "ポロシャツコーデ", "クラシックコーデ", "チェックコーデ", "パイレーツ衣装", "冬服", "2025年 サンタ衣装", "スタイリング制服", "2026年 振袖", "ジャージ", "2026年 バレンタインコーデ"], "特殊": ["【会場予約特典】 東京ドーム限定成員生寫真", "東京ドーム完賣御禮紀念!! ライブ會場撮りおろしプレミアム生寫真", "福袋 2025 「4th ARENA TOUR IN 東京ドーム」 オープニング衣装", "福袋 2026 MV衣装"]},
+                    showInput: false, currentMember: null, newItem: { name: '', series: '', category: '' }, rawItems: [], ownedIds: new Set(), seriesImages: {}, expandedSeries: new Set(), zoomedImg: null
                 }
             },
             computed: {
                 memberList() { return [...new Set(this.rawItems.map(i => i.name))]; },
+                itemsBySeries() {
+                    const grouped = {};
+                    this.rawItems.forEach(item => {
+                        const cat = item.category || '其他';
+                        if (!grouped[cat]) grouped[cat] = {};
+                        if (!grouped[cat][item.series]) grouped[cat][item.series] = [];
+                        const bId = item.batchId || item.series;
+                        let batch = grouped[cat][item.series].find(b => b.batchId === bId);
+                        if (!batch) {
+                            batch = { batchId: bId, seriesName: item.series, memberName: item.name, items: [] };
+                            grouped[cat][item.series].push(batch);
+                        }
+                        batch.items.push(item);
+                    });
+                    return grouped;
+                },
                 memberItemsGrouped() {
                     if (!this.currentMember) return {};
                     const filtered = this.rawItems.filter(i => i.name === this.currentMember);
                     const grouped = {};
-                    
-                    // 根據 batchId 分組
                     filtered.forEach(item => {
                         const cat = item.category || '其他';
                         if (!grouped[cat]) grouped[cat] = [];
-                        
-                        // batchId 現在是分組的關鍵，舊資料沒有 batchId 的話以 series 名稱為準
                         const bId = item.batchId || item.series;
                         let batch = grouped[cat].find(b => b.batchId === bId);
-                        if (!batch) {
-                            batch = { batchId: bId, seriesName: item.series, items: [] };
-                            grouped[cat].push(batch);
-                        }
+                        if (!batch) { batch = { batchId: bId, seriesName: item.series, items: [] }; grouped[cat].push(batch); }
                         batch.items.push(item);
                     });
-
-                    // 標註重複系列的組數索引 (SET 1, SET 2...)
-                    Object.keys(grouped).forEach(cat => {
-                        const seriesCounts = {};
-                        grouped[cat].forEach(batch => {
-                            seriesCounts[batch.seriesName] = (seriesCounts[batch.seriesName] || 0) + 1;
-                            batch.groupIndex = seriesCounts[batch.seriesName];
-                        });
-                    });
-
                     return grouped;
                 },
                 allExpanded() {
-                    const uniqueBatches = [...new Set(this.rawItems.filter(i => i.name === this.currentMember).map(i => i.batchId || i.series))];
-                    return uniqueBatches.length > 0 && this.expandedSeries.size === uniqueBatches.length;
+                    const ids = [...new Set(this.rawItems.filter(i => i.name === this.currentMember).map(i => i.batchId || i.series))];
+                    return ids.length > 0 && this.expandedSeries.size === ids.length;
                 }
             },
             mounted() { this.loadData(); },
             methods: {
-                onCategorySelect() { if (this.selectedCategory !== 'custom_cat') this.newItem.category = this.selectedCategory; else this.newItem.category = ''; this.selectedPreset = ''; },
-                onSeriesSelect() { if (this.selectedPreset !== 'custom_series') this.newItem.series = this.selectedPreset; else this.newItem.series = ''; },
+                onCategorySelect() { if (this.selectedCategory !== 'custom_cat') this.newItem.category = this.selectedCategory; this.selectedPreset = ''; },
+                onSeriesSelect() { if (this.selectedPreset !== 'custom_series') this.newItem.series = this.selectedPreset; },
                 toggleSeries(id) { if (this.expandedSeries.has(id)) this.expandedSeries.delete(id); else this.expandedSeries.add(id); },
-                toggleAll() {
-                    if (this.allExpanded) this.expandedSeries.clear();
-                    else [...new Set(this.rawItems.filter(i => i.name === this.currentMember).map(i => i.batchId || i.series))].forEach(id => this.expandedSeries.add(id));
-                },
+                toggleAll() { if (this.allExpanded) this.expandedSeries.clear(); else [...new Set(this.rawItems.filter(i => i.name === this.currentMember).map(i => i.batchId || i.series))].forEach(id => this.expandedSeries.add(id)); },
                 loadData() {
                     const savedOwned = localStorage.getItem('owned_photos'); if (savedOwned) this.ownedIds = new Set(JSON.parse(savedOwned));
                     const savedItems = localStorage.getItem('raw_items'); if (savedItems) this.rawItems = JSON.parse(savedItems);
                     const savedSeriesImgs = localStorage.getItem('series_images'); if (savedSeriesImgs) this.seriesImages = JSON.parse(savedSeriesImgs);
                 },
-                saveData() {
-                    localStorage.setItem('raw_items', JSON.stringify(this.rawItems));
-                    localStorage.setItem('owned_photos', JSON.stringify([...this.ownedIds]));
-                    localStorage.setItem('series_images', JSON.stringify(this.seriesImages));
-                },
+                saveData() { localStorage.setItem('raw_items', JSON.stringify(this.rawItems)); localStorage.setItem('owned_photos', JSON.stringify([...this.ownedIds])); localStorage.setItem('series_images', JSON.stringify(this.seriesImages)); },
                 addBatchItems() {
-                    if (!this.newItem.name || !this.newItem.series || !this.newItem.category) return;
-                    const bId = `batch-${Date.now()}`;
-                    ['ヨリ', 'チュウ', 'ヒキ', '座り'].forEach(type => {
-                        this.rawItems.push({ id: `id-${Math.random()}`, batchId: bId, name: this.newItem.name, series: this.newItem.series, category: this.newItem.category, type });
+                    const names = this.addMode === 'member' ? [this.newItem.name] : this.batchMemberNames;
+                    if (!names.length || !this.newItem.series || !this.newItem.category) return;
+                    names.forEach(name => {
+                        const bId = `batch-${Date.now()}-${Math.random()}`;
+                        ['ヨリ', 'チュウ', 'ヒキ', '座り'].forEach(type => {
+                            this.rawItems.push({ id: `id-${Math.random()}`, batchId: bId, name, series: this.newItem.series, category: this.newItem.category, type });
+                        });
                     });
-                    this.saveData(); this.currentMember = this.newItem.name; 
-                    this.expandedSeries.clear(); this.expandedSeries.add(bId);
-                    this.showInput = false; this.newItem.series = ''; this.selectedPreset = '';
+                    this.saveData();
+                    if (this.addMode === 'member') { this.currentMember = this.newItem.name; this.showInput = false; }
+                    else { alert('新增成功！'); this.batchMemberNames = []; }
                 },
-                removeSeries(bId) { if(confirm(`確定刪除此組系列？`)) { this.rawItems = this.rawItems.filter(i => (i.batchId || i.series) !== bId || i.name !== this.currentMember); delete this.seriesImages[bId]; this.expandedSeries.delete(bId); this.saveData(); } },
-                removeImage(bId) { if(confirm('確定要刪除這張展示圖嗎？')) { delete this.seriesImages[bId]; this.saveData(); } },
+                removeSeries(bId) { if(confirm(`確定刪除？`)) { this.rawItems = this.rawItems.filter(i => (i.batchId || i.series) !== bId); delete this.seriesImages[bId]; this.saveData(); } },
+                removeImage(bId) { if(confirm('確定刪除圖片？')) { delete this.seriesImages[bId]; this.saveData(); } },
                 handleSeriesImageUpload(event, bId) {
                     const file = event.target.files[0]; if (!file) return;
                     const reader = new FileReader();
@@ -252,24 +315,9 @@
                 getProgress(items) { return { count: items.filter(i => this.ownedIds.has(i.id)).length }; },
                 getActiveMembersInGen(gen) { return this.presetMembers[gen].filter(name => this.memberList.includes(name)); },
                 getGenActiveCount(gen) { return this.getActiveMembersInGen(gen).length; },
-                exportData() {
-                    const data = JSON.stringify(localStorage);
-                    const blob = new Blob([data], {type: 'text/plain'});
-                    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `sakura_backup.txt`; a.click();
-                },
-                importData(event) {
-                    const file = event.target.files[0]; if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        try {
-                            const data = JSON.parse(e.target.result);
-                            Object.keys(data).forEach(key => localStorage.setItem(key, data[key]));
-                            location.reload();
-                        } catch (err) { alert('還原失敗'); }
-                    };
-                    reader.readAsText(file);
-                },
-                clearAll() { if(confirm('警告：這將清空所有資料！')) { localStorage.clear(); location.reload(); } }
+                exportData() { const blob = new Blob([JSON.stringify(localStorage)], {type: 'text/plain'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `sakura_backup.txt`; a.click(); },
+                importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); Object.keys(data).forEach(key => localStorage.setItem(key, data[key])); location.reload(); } catch (err) { alert('還原失敗'); } }; reader.readAsText(file); },
+                clearAll() { if(confirm('警告：確定清除？')) { localStorage.clear(); location.reload(); } }
             }
         }).mount('#app')
     </script>
