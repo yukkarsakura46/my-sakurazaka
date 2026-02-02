@@ -7,7 +7,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 全局字體設定，取消斜體 */
+        /* 全局高品質中日文通用字體，強制取消斜體 */
         * {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", sans-serif !important;
             font-style: normal !important;
@@ -28,10 +28,16 @@
         .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; max-height: 2500px; overflow: hidden; }
         .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
         
+        /* 模式大分類字體放大至 11px */
         .section-header { 
-            font-size: 8.5px; font-weight: 900; color: #94a3b8; letter-spacing: 0.1em; 
-            margin: 15px 0 8px 4px; border-left: 2px solid #f472b6; 
-            padding-left: 6px; text-transform: uppercase; 
+            font-size: 11px; 
+            font-weight: 900; 
+            color: #64748b; 
+            letter-spacing: 0.1em; 
+            margin: 20px 0 10px 4px; 
+            border-left: 3px solid #f472b6; 
+            padding-left: 8px; 
+            text-transform: uppercase; 
         }
         
         .modal-overlay {
@@ -72,24 +78,31 @@
                     <button @click="addMode = 'member'" class="mode-btn" :class="addMode === 'member' ? 'mode-btn-active' : 'mode-btn-inactive'">按成員新增</button>
                     <button @click="addMode = 'series'" class="mode-btn" :class="addMode === 'series' ? 'mode-btn-active' : 'mode-btn-inactive'">按系列新增</button>
                 </div>
-                <div class="space-y-3 text-xs">
+                <div class="space-y-3 text-xs text-gray-700">
                     <template v-if="addMode === 'member'">
-                        <select v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold text-gray-700"><option value="">-- 1. 選擇期別 --</option><option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option></select>
-                        <select v-if="selectedGen" v-model="newItem.name" class="w-full border p-2.5 rounded-xl bg-white font-bold text-gray-700"><option value="">-- 2. 選擇成員 --</option><option v-for="name in presetMembers[selectedGen]" :key="name" :value="name">{{ name }}</option></select>
-                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white text-gray-700"><option value="">-- 3. 選擇分類 --</option><option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option></select>
-                        <select v-if="selectedCategory" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white text-gray-700"><option value="">-- 4. 選擇系列 (可重複) --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option><option value="custom_series">＋ 手動輸入系列...</option></select>
+                        <select v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold"><option value="">-- 1. 選擇期別 --</option><option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option></select>
+                        <select v-if="selectedGen" v-model="newItem.name" class="w-full border p-2.5 rounded-xl bg-white font-bold"><option value="">-- 2. 選擇成員 --</option><option v-for="name in presetMembers[selectedGen]" :key="name" :value="name">{{ name }}</option></select>
+                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 3. 選擇分類 --</option><option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option></select>
+                        <select v-if="selectedCategory" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 4. 選擇系列 (可重複) --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option><option value="custom_series">＋ 手動輸入系列...</option></select>
                     </template>
                     <template v-else>
-                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white text-gray-700"><option value="">-- 1. 選擇分類 --</option><option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option></select>
-                        <select v-if="selectedCategory" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white text-gray-700"><option value="">-- 2. 選擇系列 --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option></select>
-                        <select v-if="selectedPreset" v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold text-gray-700"><option value="">-- 3. 選擇期別 --</option><option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option></select>
+                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 1. 選擇分類 --</option><option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option></select>
+                        <select v-if="selectedCategory" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 2. 選擇系列 --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option></select>
+                        <select v-if="selectedPreset" v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold"><option value="">-- 3. 選擇期別 --</option><option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option></select>
                         <div v-if="selectedGen && selectedPreset" class="border rounded-xl p-3 bg-slate-50 max-h-40 overflow-y-auto">
-                            <div v-for="name in presetMembers[selectedGen]" :key="name" class="flex items-center mb-2"><input type="checkbox" :id="'bat-'+name" :value="name" v-model="batchMemberNames" class="mr-2 accent-pink-500 font-bold"><label :for="'bat-'+name" class="font-bold">{{ name }}</label></div>
+                            <div v-for="name in presetMembers[selectedGen]" :key="name" class="flex items-center mb-2"><input type="checkbox" :id="'batch-'+name" :value="name" v-model="batchMemberNames" class="mr-2 accent-pink-500 font-bold"><label :for="'batch-'+name" class="font-bold">{{ name }}</label></div>
                         </div>
                     </template>
                     <input v-if="selectedCategory === 'custom_cat'" v-model="newItem.category" type="text" placeholder="手動輸入分類" class="w-full border p-2.5 rounded-xl">
                     <input v-if="selectedPreset === 'custom_series' || selectedCategory === 'custom_cat'" v-model="newItem.series" type="text" placeholder="手動輸入系列名稱" class="w-full border p-2.5 rounded-xl">
                     <button @click="addBatchItems" class="w-full bg-pink-500 text-white p-3 rounded-xl font-bold shadow-lg active:scale-95 transition mt-2">確認新增並跳轉</button>
+                </div>
+                <div class="flex justify-between mt-6 border-t pt-4 gap-2 text-[9px]">
+                    <div class="flex gap-2">
+                        <button @click="exportData" class="text-blue-500 font-bold border border-blue-100 px-3 py-1.5 rounded-lg">備份</button>
+                        <label class="text-green-600 font-bold border border-green-100 px-3 py-1.5 rounded-lg cursor-pointer">還原<input type="file" class="hidden" @change="importData" accept=".txt"></label>
+                    </div>
+                    <button @click="clearAll" class="text-red-300 font-bold px-2">清空</button>
                 </div>
             </div>
         </div>
@@ -110,7 +123,7 @@
                                 <span class="text-[8px] mr-3 text-pink-400 transition-transform duration-200" :class="{'rotate-90': expandedSeriesMode.has(catName + seriesName)}">▶</span>
                                 <h3 class="text-[10px] font-black text-gray-600 truncate mr-2">{{ seriesName }}</h3>
                             </div>
-                            <div class="bg-gray-50 px-2 py-0.5 rounded text-[9px] font-bold text-pink-400 shrink-0 tracking-tight">
+                            <div class="bg-gray-50 px-2 py-0.5 rounded text-[9px] font-bold text-pink-400 shrink-0 tracking-tight uppercase">
                                 {{ getUniqueMemberCount(batches) }} {{ getUniqueMemberCount(batches) === 1 ? 'Member' : 'Members' }}
                             </div>
                         </div>
@@ -151,7 +164,7 @@
                 </div>
                 
                 <div v-for="(batches, categoryName) in memberItemsGrouped" :key="categoryName" class="mb-8">
-                    <div class="px-2 mb-3"><span class="text-[8px] font-black bg-slate-200 text-slate-500 px-2 py-1 rounded uppercase tracking-widest">{{ categoryName }}</span></div>
+                    <h2 class="section-header">{{ categoryName }}</h2>
                     <div v-for="batch in batches" :key="batch.batchId" :id="'batch-' + batch.batchId" class="mb-2.5">
                         <div @click="toggleSeries(batch.batchId)" class="bg-white px-4 py-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:bg-gray-50">
                             <div class="flex items-center overflow-hidden">
@@ -197,7 +210,7 @@
                 return {
                     viewMode: 'member', addMode: 'member',
                     selectedGen: '', selectedCategory: '', selectedPreset: '', batchMemberNames: [],
-                    presetMembers: {"二期生": ["遠藤光莉", "大園玲", "大沼晶保", "幸阪茉里乃", "武元唯衣", "田村保乃", "藤吉夏鈴", "増本綺良", "松田里奈", "森田ひかる", "守屋麗奈", "山﨑天"], "三期生": ["石森璃花", "遠藤理子", "小田倉麗奈", "小島凪紗", "谷口愛季", "中嶋優月", "的野美青", "向井純葉", "村井優", "村山美羽", "山下瞳月"], "四期生": ["浅井恋乃未", "稲熊ひな", "勝又春", "佐藤愛桜", "中川智尋", "松本和子", "目黒陽色", "山川宇衣", "山田桃実"], "畢業生": ["松平璃子", "守屋茜", "渡邉梨加", "渡邉理佐", "原田葵", "尾関梨香", "菅井友香", "関有美子", "土生瑞穂", "小林由依", "齋藤冬優花", "上村莉菜", "小池美波", "井上梨名"]},
+                    ppresetMembers: {"二期生": ["遠藤光莉", "大園玲", "大沼晶保", "幸阪茉里乃", "武元唯衣", "田村保乃", "藤吉夏鈴", "増本綺良", "松田里奈", "森田ひかる", "守屋麗奈", "山﨑天"], "三期生": ["石森璃花", "遠藤理子", "小田倉麗奈", "小島凪紗", "谷口愛季", "中嶋優月", "的野美青", "向井純葉", "村井優", "村山美羽", "山下瞳月"], "四期生": ["浅井恋乃未", "稲熊ひな", "勝又春", "佐藤愛桜", "中川智尋", "松本和子", "目黒陽色", "山川宇衣", "山田桃実"], "畢業生": ["松平璃子", "守屋茜", "渡邉梨加", "渡邉理佐", "原田葵", "尾関梨香", "菅井友香", "関有美子", "土生瑞穂", "小林由依", "齋藤冬優花", "上村莉菜", "小池美波", "井上梨名"]},
                     categorizedSeries: {"封入": ["1st Single「Nobody's fault」封入", "2nd Single「BAN」封入", "3rd Single「流れ弾」封入", "4th Single「五月雨よ」封入", "1st Album「As you know?」封入", "5th Single「桜月」封入", "6th Single「Start over!」封入", "7th Single「承認欲求」封入", "8th Single「何歳の頃に戻りたいのか?」 封入", "9th Single「自業自得」封入", "10th Single「I want tomorrow to come」封入", "11th Single「UDAGAWA GENERATION」封入", "2nd Album「Addiction」封入", "12th Single「Make or Break」封入", "13th Single「Unhappy birthday構文」封入", "14th Single「The growing up train」封入"], "MV衣裝": ["「Nobody's fault」MVロケーション衣装", "「なぜ恋をして来なかったんだろう?」MVロケーション衣装", "「Buddies」MVロケーション衣装", "「BAN」MVロケーション衣装", "「偶然の答え」MVロケーション衣装", "「思ったよりも寂しくはない」MVロケーション衣装", "「流れ弾」MVロケーション衣装", "「Dead end」MVロケーション衣装", "「無言の宇宙」MVロケーション衣装", "「Dead end」MVロケーション衣装", "「流れ弾」MV黒衣装", "「五月雨よ」MVロケーション衣装", "「五月雨よ」MVパフォーマンス衣装", "「車間距離」MVロケーション衣装", "「僕のジレンマ」MVロケーション衣装", "「摩擦係数」MV衣装", "「桜月」MV衣装", "「桜月」MV青衣装", "「Cool」MV衣装", "「夏の近道」 MV衣装", "「夏の近道」 MV制服", "「BAN」 MV衣装", "「Start over!」MV衣装", "「ドローン旋回中」MV衣装", "「静寂の暴力」 MV衣装", "「Nobody's fault」MV衣装", "「承認欲求」MV衣装", "「マモリビト」 MV衣装", "「隙間風よ」MV衣装", "「何歳の頃に戻りたいのか?」MV衣装", "「何度 LOVE SONG の歌詞を読み返しただろう」 MV衣装", "「油を注せ!」 MV衣装", "「自業自得」MV衣装", "「愛し合いなさい」 MV衣装", "「引きこもる時間はない」 MV衣装", "「I want tomorrow to come」MV衣装", "「本質的なこと」 MV衣装", "「僕は僕を好きになれない」 MV衣装", "「UDAGAWA GENERATION」MV衣装", "「Nothing Special」MV衣装", "「Nightmare 症候群」MV衣装", "「Addiction」 MV衣装", "「Make or Break」 MV衣装", "「港区パセリ」 MV衣装", "「死んだふり」MV衣装", "「Unhappy birthday構文」MV衣装", "「木枯らしは泣かない」MV衣装", "「Alter ego」MV衣装", "「The growing up train」MV衣装"], "封面": ["流れ弾ジャケット写真衣装", "「Start over!」 ジャケット写真衣装", "「承認欲求」ジャケット写真衣装", "「何歳の頃に戻りたいのか?」ジャケット写真衣装", "「自業自得」ジャケット写真衣装", "「I want tomorrow to come」ジャケット写真衣装", "「UDAGAWA GENERATION」ジャケット写真衣装", "「Make or Break」ジャケット写真衣装", "「Unhappy birthday構文」ジャケット写真衣装", "「The growing up train」ジャケット写真衣装"], "LIVE衣裝": ["三期生ブックレット衣装", "「3rd TOUR 2023」オープニング衣装", "「3rd TOUR 2023」白スーツ衣装", "2023年夏フェス衣装", "「3rd Single BACKS LIVE!!」衣装", "「3rd TOUR 2023」ピンク衣装", "「3rd YEAR ANNIVERSARY LIVE」ライブ衣装", "「7th Single BACKS LIVE!!」オープニング衣装", "「小林由依 卒業コンサート」ライブ衣装", "「小林由依 卒業コンサート」赤衣装", "「3rd TOUR 2023」ライブ衣装", "2023年 年末歌唱衣装", "「8th Single BACKS LIVE!!」ライブ衣装", "「4th ARENA TOUR 2024」ライブ衣装", "「3rd YEAR ANNIVERSARY LIVE」ライブ衣装", "「4th ARENA TOUR IN 東京ドーム」オープニング衣装", "「9th Single BACKS LIVE!!」オープニング衣装", "2023年 年末衣装", "2024年夏フェス衣装", "「4th ARENA TOUR」オープニング衣装", "「4th YEAR ANNIVERSARY LIVE」ライブ衣装", "「4th ARENA TOUR」ライブ衣装", "「三期生ライブ」オープニング衣装", "「4th ARENA TOUR IN 東京ドーム」ライブ衣装", "「10th Single BACKS LIVE!!」ライブ衣装", "「5th TOUR 2025 “Addiction”」ライブ衣装", "「三期生ライブ」衣装", "「12th Single BACKS LIVE!!」ライブ衣装", "「5th TOUR 2025 “Addiction”」黑衣装", "「12th Single BACKS LIVE!!」黑衣装"], "其他": ["2023年 冬私服コーデ", "スーツコーデ", "カラーコーデ", "サマーワンピース", "デニムコーデ", "2023年 ハロウィン衣装", "2023年 クリスマスサンタ衣装", "2023年 読書コーデ", "2024年 振袖衣装", "おうちコーデ", "ジャンプスーツ", "2024年 春私服コーデ", "カラーデニム", "2024年浴衣", "麥わら帽子コーデ", "Tシャツコーデ", "ワイシャツコーデ", "2024年 ハロウィン衣装", "カラーニットコーデ", "2024年 クリスマスサンタ衣装", "どうぶつ着ぐるみ", "マフラーコーデ", "2025年振袖", "いぬみみコーデ", "モードコーデ", "冬私服コーデ", "ネクタイコーデ", "レザージャケットコーデ", "2025年浴衣", "ポロシャツコーデ", "クラシックコーデ", "チェックコーデ", "パイレーツ衣装", "冬服", "2025年 サンタ衣装", "スタイリング制服", "2026年 振袖", "ジャージ", "2026年 バレンタインコーデ"], "特殊": ["【会場予約特典】 東京ドーム限定成員生寫真", "東京ドーム完賣御禮紀念!! ライブ會場撮りおろしプレミアム生寫真", "福袋 2025 「4th ARENA TOUR IN 東京ドーム」 オープニング衣装", "福袋 2026 MV衣装"]},
                     showInput: false, currentMember: null, newItem: { name: '', series: '', category: '' }, rawItems: [], ownedIds: new Set(), seriesImages: {}, expandedSeries: new Set(), expandedSeriesMode: new Set(), zoomedImg: null
                 }
@@ -211,20 +224,20 @@
                         const series = item.series;
                         const bId = item.batchId || item.series;
                         if (!grouped[cat]) grouped[cat] = {};
-                        if (!grouped[cat][series]) grouped[cat][series] = [];
-                        let batch = grouped[cat][series].find(b => b.batchId === bId);
-                        if (!batch) { batch = { batchId: bId, seriesName: series, memberName: item.name, items: [] }; grouped[cat][series].push(batch); }
+                        if (!grouped[cat][item.series]) grouped[cat][item.series] = [];
+                        let batch = grouped[cat][item.series].find(b => b.batchId === bId);
+                        if (!batch) { batch = { batchId: bId, seriesName: item.series, memberName: item.name, items: [] }; grouped[cat][item.series].push(batch); }
                         batch.items.push(item);
                     });
                     Object.keys(grouped).forEach(cat => {
                         Object.keys(grouped[cat]).forEach(sName => {
-                            const mCounts = {};
-                            grouped[cat][sName].forEach(b => { mCounts[b.memberName] = (mCounts[b.memberName] || 0) + 1; });
+                            const counts = {};
+                            grouped[cat][sName].forEach(b => { counts[b.memberName] = (counts[b.memberName] || 0) + 1; });
                             const curIdx = {};
                             grouped[cat][sName].forEach(b => {
                                 curIdx[b.memberName] = (curIdx[b.memberName] || 0) + 1;
                                 b.groupIndex = curIdx[b.memberName];
-                                b.totalSets = mCounts[b.memberName];
+                                b.totalSets = counts[b.memberName];
                             });
                         });
                     });
