@@ -20,19 +20,13 @@
             border-radius: 6px; font-size: 10px; font-weight: 800;
             transition: all 0.2s ease; letter-spacing: -0.5px;
         }
-        .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; max-height: 2000px; overflow: hidden; }
+        .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; max-height: 2500px; overflow: hidden; }
         .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
         
-        /* 縮小期別分類標籤字體 */
         .section-header { 
-            font-size: 8.5px; 
-            font-weight: 900; 
-            color: #94a3b8; 
-            letter-spacing: 0.1em; 
-            margin: 15px 0 8px 4px; 
-            border-left: 2px solid #f472b6; 
-            padding-left: 6px; 
-            text-transform: uppercase; 
+            font-size: 8.5px; font-weight: 900; color: #94a3b8; letter-spacing: 0.1em; 
+            margin: 15px 0 8px 4px; border-left: 2px solid #f472b6; 
+            padding-left: 6px; text-transform: uppercase; 
         }
         
         .modal-overlay {
@@ -54,7 +48,6 @@
         .series-row:last-child { border-bottom: 0; }
         .member-info { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; }
         .member-name-text { font-size: 11px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        /* 修正 Complete 標籤寬度以防止截斷 */
         .status-badge { min-width: 65px; text-align: right; white-space: nowrap; }
     </style>
 </head>
@@ -63,7 +56,7 @@
         <nav class="bg-white shadow-sm p-4 sticky top-0 z-30 border-b border-gray-100">
             <div class="max-w-xl mx-auto flex justify-between items-center">
                 <h1 class="text-xl font-black text-gray-800 tracking-tight cursor-pointer" @click="currentMember = null; viewMode = 'member'">🌸 櫻坂46</h1>
-                <button @click="showInput = true" class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold shadow-lg active:scale-95 transition tracking-widest uppercase">管理面板</button>
+                <button @click="showInput = true" class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold shadow-lg active:scale-95 transition tracking-widest">管理面板</button>
             </div>
         </nav>
 
@@ -102,7 +95,7 @@
                         <select v-if="selectedCategory" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white text-gray-700"><option value="">-- 2. 選擇系列 --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option></select>
                         <select v-if="selectedPreset" v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold text-gray-700"><option value="">-- 3. 選擇期別 --</option><option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option></select>
                         <div v-if="selectedGen && selectedPreset" class="border rounded-xl p-3 bg-slate-50 max-h-40 overflow-y-auto">
-                            <div v-for="name in presetMembers[selectedGen]" :key="name" class="flex items-center mb-2"><input type="checkbox" :id="'batch-'+name" :value="name" v-model="batchMemberNames" class="mr-2 accent-pink-500 font-bold"><label :for="'batch-'+name" class="font-bold">{{ name }}</label></div>
+                            <div v-for="name in presetMembers[selectedGen]" :key="name" class="flex items-center mb-2"><input type="checkbox" :id="'bat-'+name" :value="name" v-model="batchMemberNames" class="mr-2 accent-pink-500 font-bold"><label :for="'bat-'+name" class="font-bold">{{ name }}</label></div>
                         </div>
                     </template>
                     <input v-if="selectedCategory === 'custom_cat'" v-model="newItem.category" type="text" placeholder="手動輸入分類" class="w-full border p-2.5 rounded-xl">
@@ -124,7 +117,7 @@
             <div v-if="!currentMember" class="flex justify-center items-center gap-4 my-4">
                 <button @click="viewMode = 'member'" class="tab-btn" :class="viewMode === 'member' ? 'tab-active' : 'tab-inactive'">成員模式</button>
                 <button @click="viewMode = 'series'" class="tab-btn" :class="viewMode === 'series' ? 'tab-active' : 'tab-inactive'">系列模式</button>
-                <button v-if="viewMode === 'series' && memberList.length" @click="toggleAllSeriesMode" class="text-[9px] bg-slate-200 text-slate-500 px-2 py-1.5 rounded-lg font-black uppercase">{{ allExpandedSeries ? '收合全部' : '展開全部' }}</button>
+                <button v-if="viewMode === 'series' && memberList.length" @click="toggleAllSeriesMode" class="text-[9px] bg-slate-200 text-slate-500 px-2 py-1.5 rounded-lg font-black uppercase shadow-sm">{{ allExpandedSeries ? '收合全部' : '展開全部' }}</button>
             </div>
 
             <div v-if="!currentMember && viewMode === 'member'">
@@ -150,7 +143,7 @@
                                 <span class="text-[8px] mr-3 text-pink-400 transition-transform duration-200" :class="{'rotate-90': expandedSeriesMode.has(catName + seriesName)}">▶</span>
                                 <h3 class="text-[10px] font-black text-gray-600 truncate mr-2">{{ seriesName }}</h3>
                             </div>
-                            <div class="bg-gray-50 px-2 py-0.5 rounded text-[9px] font-bold text-pink-400 shrink-0 uppercase tracking-tighter">
+                            <div class="bg-gray-50 px-2 py-0.5 rounded text-[9px] font-bold text-pink-400 shrink-0 tracking-tight">
                                 {{ batches.length }} {{ batches.length === 1 ? 'Member' : 'Members' }}
                             </div>
                         </div>
@@ -166,7 +159,7 @@
                                         <div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border" :class="ownedIds.has(item.id) ? 'bg-pink-500 border-pink-500 text-white shadow-sm' : 'bg-white border-gray-100 text-gray-200'" style="font-size: 8px;">{{ item.type }}</div>
                                     </div>
                                     <div class="status-badge text-[9px] font-black shrink-0" :class="getProgress(batch.items).count === 4 ? 'text-green-500' : 'text-pink-400'">
-                                        {{ getProgress(batch.items).count === 4 ? 'Complete' : getProgress(batch.items).count+'/4' }}
+                                        {{ getProgress(batch.items).count === 4 ? 'Complete' : getProgress(batch.items).count + '/4' }}
                                     </div>
                                 </div>
                             </div>
@@ -199,7 +192,7 @@
                         <div @click="toggleSeries(batch.batchId)" class="bg-white px-4 py-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:bg-gray-50">
                             <div class="flex items-center overflow-hidden">
                                 <span class="text-[8px] mr-3 text-pink-400 transition-transform duration-200" :class="{'rotate-90': expandedSeries.has(batch.batchId)}">▶</span>
-                                <h3 class="text-xs font-bold truncate mr-1">{{ batch.seriesName }}</h3>
+                                <h3 class="text-xs font-bold truncate mr-1 text-gray-700">{{ batch.seriesName }}</h3>
                                 <span v-if="batch.totalSets > 1" class="group-tag">SET {{ batch.groupIndex }}</span>
                             </div>
                             <div class="flex items-center gap-3">
@@ -227,7 +220,7 @@
 
             <div v-if="!memberList.length" class="text-center py-24 text-slate-300 font-bold italic"><div class="text-3xl mb-4 opacity-20">🌸</div>點擊右上角 管理面板 開始建立資料庫</div>
         </main>
-        <div v-if="zoomedImg" @click="zoomedImg = null" class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-2"><img :src="zoomedImg" class="max-w-full max-h-full object-contain shadow-2xl"></div>
+        <div v-if="zoomedImg" @click="zoomedImg = null" class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-2"><img :src="zoomedImg" class="max-w-full max-h-full object-contain"></div>
     </div>
 
     <script>
