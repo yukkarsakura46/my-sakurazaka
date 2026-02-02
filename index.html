@@ -7,7 +7,7 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* 全局字體設定，取消斜體 */
+        /* 全局高品質中日文通用字體，強制取消斜體 */
         * {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", sans-serif !important;
             font-style: normal !important;
@@ -23,10 +23,16 @@
         .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; max-height: 2000px; overflow: hidden; }
         .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
         
+        /* 縮小期別分類標籤字體 */
         .section-header { 
-            font-size: 8.5px; font-weight: 900; color: #94a3b8; letter-spacing: 0.1em; 
-            margin: 15px 0 8px 4px; border-left: 2px solid #f472b6; 
-            padding-left: 6px; text-transform: uppercase; 
+            font-size: 8.5px; 
+            font-weight: 900; 
+            color: #94a3b8; 
+            letter-spacing: 0.1em; 
+            margin: 15px 0 8px 4px; 
+            border-left: 2px solid #f472b6; 
+            padding-left: 6px; 
+            text-transform: uppercase; 
         }
         
         .modal-overlay {
@@ -34,7 +40,9 @@
             background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);
             z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px;
         }
+        /* SET 標籤樣式 */
         .group-tag { font-size: 8px; background: #fee2e2; color: #ef4444; padding: 1px 4px; border-radius: 4px; margin-left: 5px; font-weight: bold; white-space: nowrap; }
+        
         .tab-btn { font-size: 11px; font-weight: 900; padding: 6px 16px; border-radius: 99px; transition: all 0.2s; }
         .tab-active { background: #f472b6; color: white; box-shadow: 0 4px 12px rgba(244, 114, 182, 0.3); }
         .tab-inactive { color: #94a3b8; }
@@ -46,7 +54,8 @@
         .series-row:last-child { border-bottom: 0; }
         .member-info { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; }
         .member-name-text { font-size: 11px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .status-badge { min-width: 58px; text-align: center; white-space: nowrap; }
+        /* 修正 Complete 標籤寬度以防止截斷 */
+        .status-badge { min-width: 65px; text-align: right; white-space: nowrap; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen pb-20">
@@ -54,7 +63,7 @@
         <nav class="bg-white shadow-sm p-4 sticky top-0 z-30 border-b border-gray-100">
             <div class="max-w-xl mx-auto flex justify-between items-center">
                 <h1 class="text-xl font-black text-gray-800 tracking-tight cursor-pointer" @click="currentMember = null; viewMode = 'member'">🌸 櫻坂46</h1>
-                <button @click="showInput = true" class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold shadow-lg active:scale-95 transition tracking-widest">管理面板</button>
+                <button @click="showInput = true" class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold shadow-lg active:scale-95 transition tracking-widest uppercase">管理面板</button>
             </div>
         </nav>
 
@@ -98,15 +107,15 @@
                     </template>
                     <input v-if="selectedCategory === 'custom_cat'" v-model="newItem.category" type="text" placeholder="手動輸入分類" class="w-full border p-2.5 rounded-xl">
                     <input v-if="selectedPreset === 'custom_series' || selectedCategory === 'custom_cat'" v-model="newItem.series" type="text" placeholder="手動輸入系列名稱" class="w-full border p-2.5 rounded-xl">
-                    <button @click="addBatchItems" class="w-full bg-pink-500 text-white p-3 rounded-xl font-bold shadow-lg active:scale-95 transition mt-2">確認新增並跳轉</button>
+                    <button @click="addBatchItems" class="w-full bg-pink-500 text-white p-3 rounded-xl font-bold shadow-lg active:scale-95 transition mt-2">確認新增</button>
                 </div>
                 
                 <div class="flex justify-between mt-6 border-t pt-4 gap-2 text-[9px]">
                     <div class="flex gap-2">
-                        <button @click="exportData" class="text-blue-500 font-bold border border-blue-100 px-3 py-1.5 rounded-lg">備份</button>
-                        <label class="text-green-600 font-bold border border-green-100 px-3 py-1.5 rounded-lg cursor-pointer">還原<input type="file" class="hidden" @change="importData" accept=".txt"></label>
+                        <button @click="exportData" class="text-blue-500 font-bold border border-blue-100 px-3 py-1.5 rounded-lg text-xs">備份</button>
+                        <label class="text-green-600 font-bold border border-green-100 px-3 py-1.5 rounded-lg cursor-pointer text-xs">還原<input type="file" class="hidden" @change="importData" accept=".txt"></label>
                     </div>
-                    <button @click="clearAll" class="text-red-300 font-bold px-2">清空資料</button>
+                    <button @click="clearAll" class="text-red-300 font-bold px-2 text-xs">清空</button>
                 </div>
             </div>
         </div>
@@ -115,7 +124,7 @@
             <div v-if="!currentMember" class="flex justify-center items-center gap-4 my-4">
                 <button @click="viewMode = 'member'" class="tab-btn" :class="viewMode === 'member' ? 'tab-active' : 'tab-inactive'">成員模式</button>
                 <button @click="viewMode = 'series'" class="tab-btn" :class="viewMode === 'series' ? 'tab-active' : 'tab-inactive'">系列模式</button>
-                <button v-if="viewMode === 'series' && memberList.length" @click="toggleAllSeriesMode" class="text-[9px] bg-slate-200 text-slate-500 px-2 py-1.5 rounded-lg font-black uppercase">{{ allExpandedSeries ? '收合' : '展開' }}</button>
+                <button v-if="viewMode === 'series' && memberList.length" @click="toggleAllSeriesMode" class="text-[9px] bg-slate-200 text-slate-500 px-2 py-1.5 rounded-lg font-black uppercase">{{ allExpandedSeries ? '收合全部' : '展開全部' }}</button>
             </div>
 
             <div v-if="!currentMember && viewMode === 'member'">
@@ -133,7 +142,7 @@
             </div>
 
             <div v-if="!currentMember && viewMode === 'series'">
-                <div v-for="(seriesObj, catName) in itemsBySeriesNormalized" :key="catName" class="mb-8">
+                <div v-for="(seriesObj, catName) in itemsBySeriesNormalized" :key="catName" class="mb-8 px-1">
                     <h2 class="section-header">{{ catName }}</h2>
                     <div v-for="(batches, seriesName) in seriesObj" :key="seriesName" class="mb-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <div @click="toggleSeriesMode(catName, seriesName)" class="px-4 py-3 flex justify-between items-center cursor-pointer active:bg-gray-50">
@@ -141,7 +150,9 @@
                                 <span class="text-[8px] mr-3 text-pink-400 transition-transform duration-200" :class="{'rotate-90': expandedSeriesMode.has(catName + seriesName)}">▶</span>
                                 <h3 class="text-[10px] font-black text-gray-600 truncate mr-2">{{ seriesName }}</h3>
                             </div>
-                            <div class="bg-gray-50 px-2 py-0.5 rounded text-[9px] font-bold text-pink-400 shrink-0">{{ batches.length }} Members</div>
+                            <div class="bg-gray-50 px-2 py-0.5 rounded text-[9px] font-bold text-pink-400 shrink-0 uppercase tracking-tighter">
+                                {{ batches.length }} {{ batches.length === 1 ? 'Member' : 'Members' }}
+                            </div>
                         </div>
                         
                         <transition name="expand">
@@ -178,7 +189,7 @@
                                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center text-pink-500"><svg class="h-5 w-5 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg></div>
                             </div>
                         </div>
-                        <button @click="toggleAll" class="text-[9px] bg-pink-50 text-pink-500 px-3 py-1.5 rounded-lg font-black uppercase tracking-tighter shadow-sm">{{ allExpanded ? '收合全部' : '展開全部' }}</button>
+                        <button @click="toggleAll" class="text-[9px] bg-pink-50 text-pink-500 px-3 py-1.5 rounded-lg font-black uppercase shadow-sm tracking-tighter">{{ allExpanded ? '收合全部' : '展開全部' }}</button>
                     </div>
                 </div>
                 
@@ -216,7 +227,7 @@
 
             <div v-if="!memberList.length" class="text-center py-24 text-slate-300 font-bold italic"><div class="text-3xl mb-4 opacity-20">🌸</div>點擊右上角 管理面板 開始建立資料庫</div>
         </main>
-        <div v-if="zoomedImg" @click="zoomedImg = null" class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-2"><img :src="zoomedImg" class="max-w-full max-h-full object-contain"></div>
+        <div v-if="zoomedImg" @click="zoomedImg = null" class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-2"><img :src="zoomedImg" class="max-w-full max-h-full object-contain shadow-2xl"></div>
     </div>
 
     <script>
