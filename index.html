@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🌸 櫻坂46 Collection</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -10,46 +10,76 @@
         * {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", sans-serif !important;
             font-style: normal !important;
+            box-sizing: border-box;
         }
-        .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+        /* 修正方格在小螢幕的表現 */
+        .photo-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 4px; 
+            width: 100%;
+            max-width: 180px; /* 限制進度條最大寬度防止撐開 */
+        }
         .item-slot {
             aspect-ratio: 2 / 1; 
             display: flex; align-items: center; justify-content: center;
-            border-radius: 6px; font-size: 10px; font-weight: 800;
+            border-radius: 4px; font-size: 9px; font-weight: 800;
             transition: all 0.2s ease; letter-spacing: -0.5px;
         }
         .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; max-height: 1500px; overflow: hidden; }
         .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
         
         .section-header { 
-            font-size: 9px; 
-            font-weight: 900; 
-            color: #94a3b8; 
-            letter-spacing: 0.1em; 
-            margin: 15px 0 8px 4px; 
-            border-left: 2px solid #f472b6; 
-            padding-left: 6px; 
-            text-transform: uppercase; 
+            font-size: 9px; font-weight: 900; color: #94a3b8; letter-spacing: 0.1em; 
+            margin: 15px 0 8px 4px; border-left: 2px solid #f472b6; 
+            padding-left: 6px; text-transform: uppercase; 
         }
+        
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);
-            z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px;
+            z-index: 100; display: flex; align-items: center; justify-content: center; padding: 15px;
         }
-        .group-tag { font-size: 8px; background: #fee2e2; color: #ef4444; padding: 1px 4px; border-radius: 4px; margin-left: 5px; font-weight: bold; }
+        .group-tag { font-size: 8px; background: #fee2e2; color: #ef4444; padding: 1px 4px; border-radius: 4px; margin-left: 4px; font-weight: bold; white-space: nowrap; }
         .tab-btn { font-size: 11px; font-weight: 900; padding: 6px 16px; border-radius: 99px; transition: all 0.2s; }
         .tab-active { background: #f472b6; color: white; box-shadow: 0 4px 12px rgba(244, 114, 182, 0.3); }
         .tab-inactive { color: #94a3b8; }
-        .mode-toggle { display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px; margin-bottom: 15px; }
-        .mode-btn { flex: 1; text-align: center; font-size: 10px; font-weight: 800; padding: 6px; border-radius: 8px; transition: all 0.2s; }
+        .mode-toggle { display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; margin-bottom: 12px; }
+        .mode-btn { flex: 1; text-align: center; font-size: 10px; font-weight: 800; padding: 6px; border-radius: 7px; transition: all 0.2s; }
         .mode-btn-active { background: white; color: #f472b6; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        /* 關鍵修正：系列模式下的行容器 */
+        .series-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f8fafc;
+            width: 100%;
+            overflow: hidden; /* 防止溢出 */
+        }
+        .series-row:last-child { border-bottom: 0; }
+        .member-info {
+            flex: 0 1 auto; /* 允許縮小 */
+            min-width: 0; /* 必須加上這行才能觸發 truncate */
+            display: flex;
+            align-items: center;
+        }
+        .member-name-text {
+            font-size: 11px;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-20 text-slate-800">
+<body class="bg-slate-50 min-h-screen pb-20 overflow-x-hidden">
     <div id="app">
         <nav class="bg-white shadow-sm p-4 sticky top-0 z-30 border-b border-gray-100">
             <div class="max-w-xl mx-auto flex justify-between items-center">
-                <h1 class="text-xl font-black tracking-tight cursor-pointer" @click="currentMember = null; viewMode = 'member'">🌸 櫻坂46</h1>
+                <h1 class="text-xl font-black text-gray-800 tracking-tight cursor-pointer" @click="currentMember = null; viewMode = 'member'">🌸 櫻坂46</h1>
                 <button @click="showInput = true" class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold shadow-lg active:scale-95 transition tracking-widest">管理面板</button>
             </div>
         </nav>
@@ -57,7 +87,7 @@
         <div v-if="showInput" class="modal-overlay" @click.self="showInput = false">
             <div class="bg-white w-full max-w-sm p-6 rounded-3xl shadow-2xl border-t-4 border-pink-400 relative overflow-y-auto max-h-[90vh]">
                 <button @click="showInput = false" class="absolute top-4 right-4 text-gray-300 hover:text-gray-500 font-bold">✕</button>
-                <h3 class="text-base font-black mb-4">管理面板</h3>
+                <h3 class="text-base font-black text-gray-800 mb-4 tracking-wide">管理面板</h3>
                 
                 <div class="mode-toggle">
                     <button @click="addMode = 'member'" class="mode-btn" :class="addMode === 'member' ? 'mode-btn-active' : 'mode-btn-inactive'">按成員新增</button>
@@ -66,58 +96,29 @@
 
                 <div class="space-y-3 text-xs">
                     <template v-if="addMode === 'member'">
-                        <select v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold">
-                            <option value="">-- 1. 選擇期別 --</option>
-                            <option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option>
-                        </select>
-                        <select v-if="selectedGen" v-model="newItem.name" class="w-full border p-2.5 rounded-xl bg-white font-bold">
-                            <option value="">-- 2. 選擇成員 --</option>
-                            <option v-for="name in presetMembers[selectedGen]" :key="name" :value="name">{{ name }}</option>
-                        </select>
-                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white">
-                            <option value="">-- 3. 選擇分類 --</option>
-                            <option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option>
-                        </select>
-                        <select v-if="selectedCategory && selectedCategory !== 'custom_cat'" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white">
-                            <option value="">-- 4. 選擇系列 --</option>
-                            <option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option>
-                            <option value="custom_series">＋ 手動輸入系列...</option>
-                        </select>
+                        <select v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold"><option value="">-- 1. 選擇期別 --</option><option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option></select>
+                        <select v-if="selectedGen" v-model="newItem.name" class="w-full border p-2.5 rounded-xl bg-white font-bold"><option value="">-- 2. 選擇成員 --</option><option v-for="name in presetMembers[selectedGen]" :key="name" :value="name">{{ name }}</option></select>
+                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 3. 選擇分類 --</option><option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option></select>
+                        <select v-if="selectedCategory && selectedCategory !== 'custom_cat'" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 4. 選擇系列 --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option><option value="custom_series">＋ 手動輸入系列...</option></select>
                     </template>
-
                     <template v-else>
-                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white">
-                            <option value="">-- 1. 選擇分類 --</option>
-                            <option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option>
-                        </select>
-                        <select v-if="selectedCategory && selectedCategory !== 'custom_cat'" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white">
-                            <option value="">-- 2. 選擇系列 --</option>
-                            <option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option>
-                        </select>
-                        <select v-if="selectedPreset" v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold">
-                            <option value="">-- 3. 選擇期別 --</option>
-                            <option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option>
-                        </select>
+                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 1. 選擇分類 --</option><option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option></select>
+                        <select v-if="selectedCategory && selectedCategory !== 'custom_cat'" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 2. 選擇系列 --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option></select>
+                        <select v-if="selectedPreset" v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold"><option value="">-- 3. 選擇期別 --</option><option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option></select>
                         <div v-if="selectedGen && selectedPreset" class="border rounded-xl p-3 bg-slate-50 max-h-40 overflow-y-auto">
-                            <div v-for="name in presetMembers[selectedGen]" :key="name" class="flex items-center mb-2">
-                                <input type="checkbox" :id="'check-'+name" :value="name" v-model="batchMemberNames" class="mr-2 accent-pink-500">
-                                <label :for="'check-'+name" class="font-bold">{{ name }}</label>
-                            </div>
+                            <div v-for="name in presetMembers[selectedGen]" :key="name" class="flex items-center mb-2"><input type="checkbox" :id="'check-'+name" :value="name" v-model="batchMemberNames" class="mr-2 accent-pink-500 font-bold"><label :for="'check-'+name" class="font-bold">{{ name }}</label></div>
                         </div>
                     </template>
-
                     <input v-if="selectedCategory === 'custom_cat'" v-model="newItem.category" type="text" placeholder="手動輸入分類" class="w-full border p-2.5 rounded-xl">
                     <input v-if="selectedPreset === 'custom_series' || selectedCategory === 'custom_cat'" v-model="newItem.series" type="text" placeholder="手動輸入系列" class="w-full border p-2.5 rounded-xl">
-                    
                     <button @click="addBatchItems" class="w-full bg-pink-500 text-white p-3 rounded-xl font-bold shadow-lg active:scale-95 transition mt-2">確認新增</button>
                 </div>
-                
                 <div class="flex justify-between mt-6 border-t pt-4 gap-2">
                     <div class="flex gap-2">
                         <button @click="exportData" class="text-[9px] text-blue-500 font-bold border border-blue-100 px-3 py-1.5 rounded-lg tracking-tighter">備份</button>
                         <label class="text-[9px] text-green-600 font-bold border border-green-100 px-3 py-1.5 rounded-lg cursor-pointer tracking-tighter">還原<input type="file" class="hidden" @change="importData" accept=".txt"></label>
                     </div>
-                    <button @click="clearAll" class="text-[9px] text-red-300 font-bold px-2 tracking-tighter">清空資料</button>
+                    <button @click="clearAll" class="text-[9px] text-red-300 font-bold px-2 tracking-tighter">清空</button>
                 </div>
             </div>
         </div>
@@ -134,7 +135,7 @@
                         <h2 class="section-header">{{ gen }}</h2>
                         <div class="grid grid-cols-2 gap-3">
                             <div v-for="name in getActiveMembersInGen(gen)" :key="name" @click="currentMember = name" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition text-center" :class="gen === '畢業生' ? 'opacity-70' : ''">
-                                <div class="font-black text-base">{{ name }}</div>
+                                <div class="font-black text-gray-700 text-base">{{ name }}</div>
                                 <div class="text-[8px] font-bold mt-1 uppercase tracking-wider text-pink-400">{{ getMemberOwnedCount(name) }} Collected</div>
                             </div>
                         </div>
@@ -143,20 +144,20 @@
             </div>
 
             <div v-if="!currentMember && viewMode === 'series'">
-                <div v-for="(seriesObj, catName) in itemsBySeriesNormalized" :key="catName" class="mb-8">
+                <div v-for="(seriesObj, catName) in itemsBySeriesNormalized" :key="catName" class="mb-8 px-1">
                     <h2 class="section-header">{{ catName }}</h2>
                     <div v-for="(batches, seriesName) in seriesObj" :key="seriesName" class="mb-4 bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden">
-                        <div class="bg-slate-50 px-4 py-2 border-b border-gray-100"><h3 class="text-[11px] font-black text-gray-600">{{ seriesName }}</h3></div>
-                        <div class="p-3 space-y-4">
-                            <div v-for="batch in batches" :key="batch.batchId" class="flex items-center justify-between gap-3 border-b border-gray-50 pb-3 last:border-0 last:pb-0">
-                                <div @click="currentMember = batch.memberName" class="shrink-0 cursor-pointer min-w-[70px]">
-                                    <span class="text-[11px] font-bold">{{ batch.memberName }}</span>
-                                    <span v-if="batch.groupIndex > 1" class="group-tag">SET {{ batch.groupIndex }}</span>
+                        <div class="bg-slate-50 px-4 py-2 border-b border-gray-100"><h3 class="text-[10px] font-black text-gray-600 truncate">{{ seriesName }}</h3></div>
+                        <div class="p-3">
+                            <div v-for="batch in batches" :key="batch.batchId" class="series-row">
+                                <div @click="currentMember = batch.memberName" class="member-info cursor-pointer">
+                                    <span class="member-name-text">{{ batch.memberName }}</span>
+                                    <span v-if="batch.groupIndex > 1" class="group-tag">SET{{ batch.groupIndex }}</span>
                                 </div>
-                                <div class="photo-grid flex-1">
-                                    <div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border" :class="ownedIds.has(item.id) ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-gray-100 text-gray-200'" style="font-size: 8px;">{{ item.type }}</div>
+                                <div class="photo-grid">
+                                    <div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border" :class="ownedIds.has(item.id) ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-gray-100 text-gray-200'">{{ item.type }}</div>
                                 </div>
-                                <div class="text-[9px] font-black text-pink-400 min-w-[45px] text-right">
+                                <div class="text-[9px] font-black text-pink-400 w-9 text-right shrink-0">
                                     {{ getProgress(batch.items).count === 4 ? 'Comp' : getProgress(batch.items).count+'/4' }}
                                 </div>
                             </div>
@@ -179,7 +180,7 @@
                                 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center text-pink-500"><svg class="h-5 w-5 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg></div>
                             </div>
                         </div>
-                        <button @click="toggleAll" class="text-[9px] bg-pink-50 text-pink-500 px-3 py-1.5 rounded-lg font-black uppercase shadow-sm tracking-tighter">{{ allExpanded ? '收合全部' : '展開全部' }}</button>
+                        <button @click="toggleAll" class="text-[9px] bg-pink-50 text-pink-500 px-3 py-1.5 rounded-lg font-black uppercase tracking-tighter shadow-sm">{{ allExpanded ? '收合' : '展開' }}</button>
                     </div>
                 </div>
                 
@@ -234,17 +235,14 @@
             },
             computed: {
                 memberList() { return [...new Set(this.rawItems.map(i => i.name))]; },
-                // 深度優化後的系列模式 Computed
                 itemsBySeriesNormalized() {
                     const grouped = {};
                     this.rawItems.forEach(item => {
                         const cat = item.category || '其他';
                         const series = item.series;
                         const bId = item.batchId || item.series;
-                        
                         if (!grouped[cat]) grouped[cat] = {};
                         if (!grouped[cat][series]) grouped[cat][series] = [];
-                        
                         let batch = grouped[cat][series].find(b => b.batchId === bId);
                         if (!batch) {
                             batch = { batchId: bId, seriesName: series, memberName: item.name, items: [] };
@@ -252,14 +250,12 @@
                         }
                         batch.items.push(item);
                     });
-
-                    // 排序與分配 groupIndex
                     Object.keys(grouped).forEach(cat => {
                         Object.keys(grouped[cat]).forEach(sName => {
-                            const memberSetCounts = {};
+                            const memberCounts = {};
                             grouped[cat][sName].forEach(b => {
-                                memberSetCounts[b.memberName] = (memberSetCounts[b.memberName] || 0) + 1;
-                                b.groupIndex = memberSetCounts[b.memberName];
+                                memberCounts[b.memberName] = (memberCounts[b.memberName] || 0) + 1;
+                                b.groupIndex = memberCounts[b.memberName];
                             });
                         });
                     });
@@ -336,7 +332,7 @@
                 getGenActiveCount(gen) { return this.getActiveMembersInGen(gen).length; },
                 exportData() { const blob = new Blob([JSON.stringify(localStorage)], {type: 'text/plain'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `sakura_backup.txt`; a.click(); },
                 importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); Object.keys(data).forEach(key => localStorage.setItem(key, data[key])); location.reload(); } catch (err) { alert('還原失敗'); } }; reader.readAsText(file); },
-                clearAll() { if(confirm('警告：確定清除？')) { localStorage.clear(); location.reload(); } }
+                clearAll() { if(confirm('警告：這將清空所有資料！')) { localStorage.clear(); location.reload(); } }
             }
         }).mount('#app')
     </script>
