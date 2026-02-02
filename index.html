@@ -10,7 +10,7 @@
         * {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", sans-serif !important;
             font-style: normal !important;
-            text-transform: none !important; /* 強制禁止自動大寫 */
+            text-transform: none !important;
             box-sizing: border-box;
         }
         .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; width: 100%; }
@@ -20,7 +20,7 @@
             border-radius: 6px; font-size: 10px; font-weight: 800;
             transition: all 0.2s ease; letter-spacing: -0.5px;
         }
-        .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; max-height: 3000px; overflow: hidden; }
+        .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; max-height: 4000px; overflow: hidden; }
         .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
         .section-header { 
             font-size: 11px; font-weight: 900; color: #64748b; letter-spacing: 0.1em; 
@@ -49,37 +49,44 @@
     <div id="app">
         <nav class="bg-white shadow-sm p-4 sticky top-0 z-30 border-b border-gray-100">
             <div class="max-w-xl mx-auto flex justify-between items-center">
-                <h1 class="text-xl font-black text-gray-800 tracking-tight cursor-pointer" @click="currentMember = null; viewMode = 'member'">🌸 櫻坂46</h1>
-                <button @click="showInput = true" class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold shadow-lg active:scale-95 transition tracking-widest uppercase">管理面板</button>
+                <h1 class="text-xl font-black text-gray-800 cursor-pointer" @click="currentMember = null; viewMode = 'member'">🌸 櫻坂46</h1>
+                <button @click="showInput = true" class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold">管理面板</button>
             </div>
         </nav>
 
         <div v-if="showInput" class="modal-overlay" @click.self="showInput = false">
             <div class="bg-white w-full max-w-sm p-6 rounded-3xl shadow-2xl border-t-4 border-pink-400 relative overflow-y-auto max-h-[90vh]">
-                <button @click="showInput = false" class="absolute top-4 right-4 text-gray-300 hover:text-gray-500 font-bold">✕</button>
-                <h3 class="text-base font-black text-gray-800 mb-4">管理面板</h3>
+                <button @click="showInput = false" class="absolute top-4 right-4 text-gray-300 font-bold">✕</button>
+                <h3 class="text-base font-black mb-4">管理面板</h3>
                 <div class="mode-toggle">
-                    <button @click="addMode = 'member'" class="mode-btn" :class="addMode === 'member' ? 'mode-btn-active' : 'mode-btn-inactive'">按成員新增</button>
-                    <button @click="addMode = 'series'" class="mode-btn" :class="addMode === 'series' ? 'mode-btn-active' : 'mode-btn-inactive'">按系列新增</button>
+                    <button @click="addMode = 'member'" class="mode-btn" :class="addMode === 'member' ? 'mode-btn-active' : ''">按成員新增</button>
+                    <button @click="addMode = 'series'" class="mode-btn" :class="addMode === 'series' ? 'mode-btn-active' : ''">按系列新增</button>
                 </div>
-                <div class="space-y-3 text-xs text-gray-700">
+                <div class="space-y-3 text-xs">
                     <template v-if="addMode === 'member'">
-                        <select v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold text-gray-700"><option value="">-- 1. 選擇期別 --</option><option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option></select>
-                        <select v-if="selectedGen" v-model="newItem.name" class="w-full border p-2.5 rounded-xl bg-white font-bold text-gray-700"><option value="">-- 2. 選擇成員 --</option><option v-for="name in presetMembers[selectedGen]" :key="name" :value="name">{{ name }}</option></select>
-                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white text-gray-700"><option value="">-- 3. 選擇分類 --</option><option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option></select>
-                        <select v-if="selectedCategory" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white text-gray-700"><option value="">-- 4. 選擇系列 (可重複) --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option><option value="custom_series">＋ 手動輸入系列...</option></select>
+                        <select v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold"><option value="">-- 期別 --</option><option v-for="(ms, g) in presetMembers" :key="g" :value="g">{{g}}</option></select>
+                        <select v-if="selectedGen" v-model="newItem.name" class="w-full border p-2.5 rounded-xl bg-white font-bold"><option value="">-- 成員 --</option><option v-for="n in presetMembers[selectedGen]" :key="n" :value="n">{{n}}</option></select>
+                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 分類 --</option><option v-for="(l, c) in categorizedSeries" :key="c" :value="c">{{c}}</option></select>
+                        <select v-if="selectedCategory" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 系列 --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{s}}</option><option value="custom_series">＋ 手動輸入...</option></select>
                     </template>
                     <template v-else>
-                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white text-gray-700"><option value="">-- 1. 選擇分類 --</option><option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{ cat }}</option></select>
-                        <select v-if="selectedCategory" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white text-gray-700"><option value="">-- 2. 選擇系列 --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{ s }}</option></select>
-                        <select v-if="selectedPreset" v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold text-gray-700"><option value="">-- 3. 選擇期別 --</option><option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option></select>
+                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 分類 --</option><option v-for="(l, c) in categorizedSeries" :key="c" :value="c">{{c}}</option></select>
+                        <select v-if="selectedCategory" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 系列 --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{s}}</option></select>
+                        <select v-if="selectedPreset" v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold"><option value="">-- 期別 --</option><option v-for="(ms, g) in presetMembers" :key="g" :value="g">{{g}}</option></select>
                         <div v-if="selectedGen && selectedPreset" class="border rounded-xl p-3 bg-slate-50 max-h-40 overflow-y-auto">
-                            <div v-for="name in presetMembers[selectedGen]" :key="name" class="flex items-center mb-2"><input type="checkbox" :id="'bat-'+name" :value="name" v-model="batchMemberNames" class="mr-2 accent-pink-500 font-bold"><label :for="'bat-'+name" class="font-bold">{{ name }}</label></div>
+                            <div v-for="n in presetMembers[selectedGen]" :key="n" class="flex items-center mb-2"><input type="checkbox" :id="'bat-'+n" :value="n" v-model="batchMemberNames" class="mr-2 accent-pink-500 font-bold"><label :for="'bat-'+n" class="font-bold">{{n}}</label></div>
                         </div>
                     </template>
-                    <input v-if="selectedCategory === 'custom_cat'" v-model="newItem.category" type="text" placeholder="手動輸入分類" class="w-full border p-2.5 rounded-xl">
-                    <input v-if="selectedPreset === 'custom_series' || selectedCategory === 'custom_cat'" v-model="newItem.series" type="text" placeholder="手動輸入系列名稱" class="w-full border p-2.5 rounded-xl">
-                    <button @click="addBatchItems" class="w-full bg-pink-500 text-white p-3 rounded-xl font-bold shadow-lg active:scale-95 transition mt-2">確認新增並跳轉</button>
+                    <input v-if="selectedCategory === 'custom_cat'" v-model="newItem.category" type="text" placeholder="手動分類" class="w-full border p-2.5 rounded-xl">
+                    <input v-if="selectedPreset === 'custom_series' || selectedCategory === 'custom_cat'" v-model="newItem.series" type="text" placeholder="手動系列" class="w-full border p-2.5 rounded-xl">
+                    <button @click="addBatchItems" class="w-full bg-pink-500 text-white p-3 rounded-xl font-bold shadow-lg">確認新增並跳轉</button>
+                </div>
+                <div class="flex justify-between mt-6 border-t pt-4 gap-2">
+                    <div class="flex gap-2">
+                        <button @click="exportData" class="text-[9px] text-blue-500 font-bold border border-blue-100 px-3 py-1.5 rounded-lg">備份</button>
+                        <label class="text-[9px] text-green-600 font-bold border border-green-100 px-3 py-1.5 rounded-lg cursor-pointer">還原<input type="file" class="hidden" @change="importData" accept=".txt"></label>
+                    </div>
+                    <button @click="clearAll" class="text-[9px] text-red-300 font-bold px-2">清空資料</button>
                 </div>
             </div>
         </div>
@@ -88,7 +95,7 @@
             <div v-if="!currentMember" class="flex justify-center items-center gap-4 my-4">
                 <button @click="viewMode = 'member'" class="tab-btn" :class="viewMode === 'member' ? 'tab-active' : 'tab-inactive'">成員模式</button>
                 <button @click="viewMode = 'series'" class="tab-btn" :class="viewMode === 'series' ? 'tab-active' : 'tab-inactive'">系列模式</button>
-                <button v-if="viewMode === 'series' && memberList.length" @click="toggleAllSeriesMode" class="text-[9px] bg-slate-200 text-slate-500 px-2 py-1.5 rounded-lg font-black uppercase shadow-sm">{{ allExpandedSeries ? '收合全部' : '展開全部' }}</button>
+                <button v-if="viewMode === 'series' && memberList.length" @click="toggleAllSeriesMode" class="text-[9px] bg-slate-200 text-slate-500 px-2 py-1.5 rounded-lg font-black">{{ allExpandedSeries ? '收合全部' : '展開全部' }}</button>
             </div>
 
             <div v-if="!currentMember && viewMode === 'member'">
@@ -98,7 +105,7 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div v-for="name in getActiveMembersInGen(gen)" :key="name" @click="currentMember = name" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition text-center" :class="gen === '畢業生' ? 'opacity-70' : ''">
                                 <div class="font-black text-gray-700 text-base">{{ name }}</div>
-                                <div class="text-[8px] font-bold mt-1 text-pink-400 tracking-tight">{{ getMemberOwnedCount(name) }} Collected</div>
+                                <div class="text-[8px] font-bold mt-1 text-pink-400">{{ getMemberOwnedCount(name) }} Collected</div>
                             </div>
                         </div>
                     </div>
@@ -112,7 +119,7 @@
                     <div v-for="(batches, seriesName) in seriesObj" :key="seriesName" :id="'series-target-' + seriesName" class="mb-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <div @click="toggleSeriesMode(catName, seriesName)" class="px-4 py-3 flex justify-between items-center cursor-pointer active:bg-gray-50">
                             <div class="flex items-center overflow-hidden"><span class="text-[8px] mr-3 text-pink-400 transition-transform duration-200" :class="{'rotate-90': expandedSeriesMode.has(catName + seriesName)}">▶</span><h3 class="text-[10px] font-black text-gray-600 truncate mr-2">{{ seriesName }}</h3></div>
-                            <div class="bg-gray-50 px-2 py-0.5 rounded text-[9px] font-bold text-pink-400 shrink-0 tracking-tight">
+                            <div class="bg-gray-50 px-2 py-0.5 rounded text-[9px] font-bold text-pink-400 shrink-0">
                                 {{ getUniqueMemberCount(batches) }} {{ getUniqueMemberCount(batches) === 1 ? 'Member' : 'Members' }}
                             </div>
                         </div>
@@ -120,7 +127,7 @@
                             <div v-if="expandedSeriesMode.has(catName + seriesName)" class="border-t border-gray-50 p-3 bg-white/50">
                                 <div v-for="batch in batches" :key="batch.batchId" class="series-row">
                                     <div @click="currentMember = batch.memberName" class="member-info cursor-pointer"><span class="member-name-text">{{ batch.memberName }}</span><span v-if="batch.totalSets > 1" class="group-tag">SET {{ batch.groupIndex }}</span></div>
-                                    <div class="series-photo-grid"><div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border" :class="ownedIds.has(item.id) ? 'bg-pink-500 border-pink-500 text-white shadow-sm' : 'bg-white border-gray-100 text-gray-200'" style="font-size: 8px;">{{ item.type }}</div></div>
+                                    <div class="series-photo-grid"><div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border" :class="ownedIds.has(item.id) ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-gray-100 text-gray-200'" style="font-size: 8px;">{{ item.type }}</div></div>
                                     <div class="status-badge text-[9px] font-black shrink-0" :class="getProgress(batch.items).count === 4 ? 'text-green-500' : 'text-pink-400'">{{ getProgress(batch.items).count === 4 ? 'Complete' : getProgress(batch.items).count+'/4' }}</div>
                                 </div>
                             </div>
@@ -131,20 +138,20 @@
 
             <div v-if="currentMember">
                 <div class="flex flex-col gap-4 mb-6 pt-2">
-                    <div class="flex items-center justify-between px-1"><div class="flex items-center gap-2"><button @click="currentMember = null" class="text-gray-300 font-bold text-2xl leading-none px-2">‹</button><div class="relative"><select v-model="currentMember" class="appearance-none bg-transparent font-black text-2xl outline-none pr-8 cursor-pointer"><optgroup v-for="(names, gen) in presetMembers" :label="gen" :key="gen"><option v-for="name in getActiveMembersInGen(gen)" :key="name" :value="name">{{ name }}</option></optgroup></select><div class="pointer-events-none absolute inset-y-0 right-0 flex items-center text-pink-500"><svg class="h-5 w-5 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg></div></div></div><button @click="toggleAll" class="text-[9px] bg-pink-50 text-pink-500 px-3 py-1.5 rounded-lg font-black tracking-tighter shadow-sm uppercase">{{ allExpanded ? '收合' : '展開' }}</button></div>
+                    <div class="flex items-center justify-between px-1"><div class="flex items-center gap-2"><button @click="currentMember = null" class="text-gray-300 font-bold text-2xl leading-none px-2">‹</button><div class="relative"><select v-model="currentMember" class="appearance-none bg-transparent font-black text-2xl outline-none pr-8 cursor-pointer"><optgroup v-for="(names, gen) in presetMembers" :label="gen" :key="gen"><option v-for="name in getActiveMembersInGen(gen)" :key="name" :value="name">{{ name }}</option></optgroup></select><div class="pointer-events-none absolute inset-y-0 right-0 flex items-center text-pink-500">▼</div></div></div><button @click="toggleAll" class="text-[9px] bg-pink-50 text-pink-500 px-3 py-1.5 rounded-lg font-black">收合/展開</button></div>
                 </div>
                 <div v-for="(batches, categoryName) in memberItemsGrouped" :key="categoryName" class="mb-8">
                     <h2 class="section-header">{{ categoryName }}</h2>
                     <div v-for="batch in batches" :key="batch.batchId" :id="'batch-target-' + batch.batchId" class="mb-2.5">
                         <div @click="toggleSeries(batch.batchId)" class="bg-white px-4 py-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:bg-gray-50">
                             <div class="flex items-center overflow-hidden"><span class="text-[8px] mr-3 text-pink-400 transition-transform duration-200" :class="{'rotate-90': expandedSeries.has(batch.batchId)}">▶</span><h3 class="text-xs font-bold truncate mr-1 text-gray-700">{{ batch.seriesName }}</h3><span v-if="batch.totalSets > 1" class="group-tag">SET {{ batch.groupIndex }}</span></div>
-                            <div class="flex items-center gap-3"><div class="bg-gray-50 px-2.5 py-1 rounded text-[10px] font-black status-badge" :class="getProgress(batch.items).count === 4 ? 'text-green-500' : 'text-pink-400'">{{ getProgress(batch.items).count === 4 ? 'Complete' : getProgress(batch.items).count + '/4' }}</div><button @click.stop="removeSeries(batch.batchId)" class="text-red-200 hover:text-red-400 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button></div>
+                            <div class="flex items-center gap-3"><div class="bg-gray-50 px-2.5 py-1 rounded text-[10px] font-black status-badge" :class="getProgress(batch.items).count === 4 ? 'text-green-500' : 'text-pink-400'">{{ getProgress(batch.items).count === 4 ? 'Complete' : getProgress(batch.items).count + '/4' }}</div><button @click.stop="removeSeries(batch.batchId)" class="text-red-200 hover:text-red-400 transition">✕</button></div>
                         </div>
                         <transition name="expand">
                             <div v-if="expandedSeries.has(batch.batchId)" class="bg-white/40 p-4 rounded-b-2xl border-x border-b border-gray-100 mx-1">
                                 <div class="mb-4 relative rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center min-h-[120px] group">
                                     <div v-if="seriesImages[batch.batchId]" class="relative w-full text-center"><img :src="seriesImages[batch.batchId]" @click="zoomedImg = seriesImages[batch.batchId]" class="w-full h-auto max-h-[450px] object-contain"><button @click.stop="removeImage(batch.batchId)" class="absolute top-2 right-2 bg-red-500/80 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">✕</button></div>
-                                    <label v-else class="py-8 cursor-pointer w-full text-center"><span class="text-[11px] text-gray-300 font-bold tracking-widest">+ 上傳展示圖</span><input type="file" class="hidden" @change="(e) => handleSeriesImageUpload(e, batch.batchId)" accept="image/*"></label>
+                                    <label v-else class="py-8 cursor-pointer w-full text-center"><span class="text-[11px] text-gray-400 font-bold tracking-widest">+ 上傳展示圖</span><input type="file" class="hidden" @change="(e) => handleSeriesImageUpload(e, batch.batchId)" accept="image/*"></label>
                                 </div>
                                 <div class="photo-grid"><div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border-2" :class="ownedIds.has(item.id) ? 'border-pink-500 bg-pink-500 text-white shadow-md' : 'border-gray-100 bg-white text-gray-300'">{{ item.type }}</div></div>
                             </div>
@@ -230,7 +237,40 @@
                 loadData() { const savedOwned = localStorage.getItem('owned_photos'); if (savedOwned) this.ownedIds = new Set(JSON.parse(savedOwned)); const savedItems = localStorage.getItem('raw_items'); if (savedItems) this.rawItems = JSON.parse(savedItems); const savedSeriesImgs = localStorage.getItem('series_images'); if (savedSeriesImgs) this.seriesImages = JSON.parse(savedSeriesImgs); },
                 saveData() { localStorage.setItem('raw_items', JSON.stringify(this.rawItems)); localStorage.setItem('owned_photos', JSON.stringify([...this.ownedIds])); localStorage.setItem('series_images', JSON.stringify(this.seriesImages)); },
                 
-                // 核心跳轉邏輯
+                // 核心：圖片強制壓縮機制
+                async handleSeriesImageUpload(event, bId) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const MAX_WIDTH = 800; // 強制最大寬度 800px
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            // 強制壓縮為 JPEG，品質設為 0.5 (大幅縮減空間佔用)
+                            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.5);
+                            this.seriesImages[bId] = compressedDataUrl;
+                            this.saveData();
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                },
+
                 async addBatchItems() {
                     const names = this.addMode === 'member' ? [this.newItem.name] : this.batchMemberNames;
                     if (!names.length || !this.newItem.series || !this.newItem.category) return;
@@ -244,13 +284,12 @@
                     const tS = this.newItem.series; const tC = this.newItem.category; const mN = names[0];
                     this.showInput = false; 
 
-                    // 使用 MutationObserver 監聽 DOM 變化
                     const observer = new MutationObserver((mutations, obs) => {
                         const targetId = this.addMode === 'member' ? 'batch-target-' + firstBId : 'series-target-' + tS;
                         const element = document.getElementById(targetId);
                         if (element) {
                             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            obs.disconnect(); // 捲動成功後停止監聽
+                            obs.disconnect();
                         }
                     });
 
@@ -259,32 +298,27 @@
                         this.$nextTick(() => {
                             this.expandedSeries.add(firstBId);
                             observer.observe(document.body, { childList: true, subtree: true });
+                            // 雙重保險：600ms 後強制再次執行捲動
+                            setTimeout(() => {
+                                const el = document.getElementById('batch-target-' + firstBId);
+                                if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 600);
                         });
                     } else {
                         this.viewMode = 'series';
                         this.$nextTick(() => {
                             this.expandedSeriesMode.add(tC + tS);
                             observer.observe(document.body, { childList: true, subtree: true });
+                            setTimeout(() => {
+                                const el = document.getElementById('series-target-' + tS);
+                                if(el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }, 600);
                         });
                         this.batchMemberNames = [];
                     }
                 },
                 removeSeries(bId) { if(confirm(`確定刪除？`)) { this.rawItems = this.rawItems.filter(i => (i.batchId || i.series) !== bId); delete this.seriesImages[bId]; this.saveData(); } },
                 removeImage(bId) { if(confirm('確定刪除圖片？')) { delete this.seriesImages[bId]; this.saveData(); } },
-                handleSeriesImageUpload(event, bId) {
-                    const file = event.target.files[0]; if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const img = new Image(); img.onload = () => {
-                            const canvas = document.createElement('canvas'); const MAX_WIDTH = 1000;
-                            canvas.width = MAX_WIDTH; canvas.height = img.height * (MAX_WIDTH / img.width);
-                            const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                            this.seriesImages[bId] = canvas.toDataURL('image/jpeg', 0.6); this.saveData();
-                        };
-                        img.src = e.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                },
                 toggleItem(id) { if (this.ownedIds.has(id)) this.ownedIds.delete(id); else this.ownedIds.add(id); this.saveData(); },
                 getMemberOwnedCount(name) { return this.rawItems.filter(i => i.name === name && this.ownedIds.has(i.id)).length; },
                 getProgress(items) { return { count: items.filter(i => this.ownedIds.has(i.id)).length }; },
