@@ -20,6 +20,7 @@
         }
         .expand-enter-active, .expand-leave-active { transition: all 0.25s ease; max-height: 1500px; overflow: hidden; }
         .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
+        
         .section-header { 
             font-size: 9px; 
             font-weight: 900; 
@@ -42,14 +43,13 @@
         .mode-toggle { display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px; margin-bottom: 15px; }
         .mode-btn { flex: 1; text-align: center; font-size: 10px; font-weight: 800; padding: 6px; border-radius: 8px; transition: all 0.2s; }
         .mode-btn-active { background: white; color: #f472b6; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .mode-btn-inactive { color: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-20">
+<body class="bg-slate-50 min-h-screen pb-20 text-slate-800">
     <div id="app">
         <nav class="bg-white shadow-sm p-4 sticky top-0 z-30 border-b border-gray-100">
             <div class="max-w-xl mx-auto flex justify-between items-center">
-                <h1 class="text-xl font-black text-gray-800 tracking-tight cursor-pointer" @click="currentMember = null; viewMode = 'member'">🌸 櫻坂46</h1>
+                <h1 class="text-xl font-black tracking-tight cursor-pointer" @click="currentMember = null; viewMode = 'member'">🌸 櫻坂46</h1>
                 <button @click="showInput = true" class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold shadow-lg active:scale-95 transition tracking-widest">管理面板</button>
             </div>
         </nav>
@@ -57,7 +57,7 @@
         <div v-if="showInput" class="modal-overlay" @click.self="showInput = false">
             <div class="bg-white w-full max-w-sm p-6 rounded-3xl shadow-2xl border-t-4 border-pink-400 relative overflow-y-auto max-h-[90vh]">
                 <button @click="showInput = false" class="absolute top-4 right-4 text-gray-300 hover:text-gray-500 font-bold">✕</button>
-                <h3 class="text-base font-black text-gray-800 mb-4">管理面板</h3>
+                <h3 class="text-base font-black mb-4">管理面板</h3>
                 
                 <div class="mode-toggle">
                     <button @click="addMode = 'member'" class="mode-btn" :class="addMode === 'member' ? 'mode-btn-active' : 'mode-btn-inactive'">按成員新增</button>
@@ -99,10 +99,9 @@
                             <option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{ gen }}</option>
                         </select>
                         <div v-if="selectedGen && selectedPreset" class="border rounded-xl p-3 bg-slate-50 max-h-40 overflow-y-auto">
-                            <p class="text-[10px] text-gray-400 mb-2 font-bold uppercase">4. 勾選要新增的成員：</p>
                             <div v-for="name in presetMembers[selectedGen]" :key="name" class="flex items-center mb-2">
                                 <input type="checkbox" :id="'check-'+name" :value="name" v-model="batchMemberNames" class="mr-2 accent-pink-500">
-                                <label :for="'check-'+name" class="font-bold text-gray-700">{{ name }}</label>
+                                <label :for="'check-'+name" class="font-bold">{{ name }}</label>
                             </div>
                         </div>
                     </template>
@@ -135,7 +134,7 @@
                         <h2 class="section-header">{{ gen }}</h2>
                         <div class="grid grid-cols-2 gap-3">
                             <div v-for="name in getActiveMembersInGen(gen)" :key="name" @click="currentMember = name" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition text-center" :class="gen === '畢業生' ? 'opacity-70' : ''">
-                                <div class="font-black text-gray-700 text-base">{{ name }}</div>
+                                <div class="font-black text-base">{{ name }}</div>
                                 <div class="text-[8px] font-bold mt-1 uppercase tracking-wider text-pink-400">{{ getMemberOwnedCount(name) }} Collected</div>
                             </div>
                         </div>
@@ -144,18 +143,21 @@
             </div>
 
             <div v-if="!currentMember && viewMode === 'series'">
-                <div v-for="(seriesObj, catName) in itemsBySeries" :key="catName" class="mb-8">
+                <div v-for="(seriesObj, catName) in itemsBySeriesNormalized" :key="catName" class="mb-8">
                     <h2 class="section-header">{{ catName }}</h2>
                     <div v-for="(batches, seriesName) in seriesObj" :key="seriesName" class="mb-4 bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden">
-                        <div class="bg-slate-50 px-4 py-2 border-b border-gray-100"><h3 class="text-[11px] font-black text-gray-600 truncate">{{ seriesName }}</h3></div>
-                        <div class="p-3 space-y-3">
-                            <div v-for="batch in batches" :key="batch.batchId" class="flex items-center justify-between gap-3">
-                                <div @click="currentMember = batch.memberName" class="shrink-0 cursor-pointer">
-                                    <span class="text-[11px] font-bold text-gray-700">{{ batch.memberName }}</span>
+                        <div class="bg-slate-50 px-4 py-2 border-b border-gray-100"><h3 class="text-[11px] font-black text-gray-600">{{ seriesName }}</h3></div>
+                        <div class="p-3 space-y-4">
+                            <div v-for="batch in batches" :key="batch.batchId" class="flex items-center justify-between gap-3 border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                                <div @click="currentMember = batch.memberName" class="shrink-0 cursor-pointer min-w-[70px]">
+                                    <span class="text-[11px] font-bold">{{ batch.memberName }}</span>
                                     <span v-if="batch.groupIndex > 1" class="group-tag">SET {{ batch.groupIndex }}</span>
                                 </div>
                                 <div class="photo-grid flex-1">
                                     <div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border" :class="ownedIds.has(item.id) ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-gray-100 text-gray-200'" style="font-size: 8px;">{{ item.type }}</div>
+                                </div>
+                                <div class="text-[9px] font-black text-pink-400 min-w-[45px] text-right">
+                                    {{ getProgress(batch.items).count === 4 ? 'Comp' : getProgress(batch.items).count+'/4' }}
                                 </div>
                             </div>
                         </div>
@@ -169,7 +171,7 @@
                         <div class="flex items-center gap-2">
                             <button @click="currentMember = null" class="text-gray-300 font-bold text-2xl leading-none px-2">‹</button>
                             <div class="relative">
-                                <select v-model="currentMember" class="appearance-none bg-transparent font-black text-2xl text-gray-800 outline-none pr-8 cursor-pointer">
+                                <select v-model="currentMember" class="appearance-none bg-transparent font-black text-2xl outline-none pr-8 cursor-pointer">
                                     <optgroup v-for="(names, gen) in presetMembers" :label="gen" :key="gen">
                                         <option v-for="name in getActiveMembersInGen(gen)" :key="name" :value="name">{{ name }}</option>
                                     </optgroup>
@@ -187,7 +189,7 @@
                         <div @click="toggleSeries(batch.batchId)" class="bg-white px-4 py-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:bg-gray-50">
                             <div class="flex items-center overflow-hidden">
                                 <span class="text-[8px] mr-3 text-pink-400 transition-transform duration-200" :class="{'rotate-90': expandedSeries.has(batch.batchId)}">▶</span>
-                                <h3 class="text-xs font-bold text-gray-600 truncate mr-1">{{ batch.seriesName }}</h3>
+                                <h3 class="text-xs font-bold truncate mr-1">{{ batch.seriesName }}</h3>
                                 <span v-if="batch.groupIndex > 1" class="group-tag">SET {{ batch.groupIndex }}</span>
                             </div>
                             <div class="flex items-center gap-3">
@@ -232,19 +234,34 @@
             },
             computed: {
                 memberList() { return [...new Set(this.rawItems.map(i => i.name))]; },
-                itemsBySeries() {
+                // 深度優化後的系列模式 Computed
+                itemsBySeriesNormalized() {
                     const grouped = {};
                     this.rawItems.forEach(item => {
                         const cat = item.category || '其他';
-                        if (!grouped[cat]) grouped[cat] = {};
-                        if (!grouped[cat][item.series]) grouped[cat][item.series] = [];
+                        const series = item.series;
                         const bId = item.batchId || item.series;
-                        let batch = grouped[cat][item.series].find(b => b.batchId === bId);
+                        
+                        if (!grouped[cat]) grouped[cat] = {};
+                        if (!grouped[cat][series]) grouped[cat][series] = [];
+                        
+                        let batch = grouped[cat][series].find(b => b.batchId === bId);
                         if (!batch) {
-                            batch = { batchId: bId, seriesName: item.series, memberName: item.name, items: [] };
-                            grouped[cat][item.series].push(batch);
+                            batch = { batchId: bId, seriesName: series, memberName: item.name, items: [] };
+                            grouped[cat][series].push(batch);
                         }
                         batch.items.push(item);
+                    });
+
+                    // 排序與分配 groupIndex
+                    Object.keys(grouped).forEach(cat => {
+                        Object.keys(grouped[cat]).forEach(sName => {
+                            const memberSetCounts = {};
+                            grouped[cat][sName].forEach(b => {
+                                memberSetCounts[b.memberName] = (memberSetCounts[b.memberName] || 0) + 1;
+                                b.groupIndex = memberSetCounts[b.memberName];
+                            });
+                        });
                     });
                     return grouped;
                 },
@@ -259,6 +276,10 @@
                         let batch = grouped[cat].find(b => b.batchId === bId);
                         if (!batch) { batch = { batchId: bId, seriesName: item.series, items: [] }; grouped[cat].push(batch); }
                         batch.items.push(item);
+                    });
+                    Object.keys(grouped).forEach(cat => {
+                        const counts = {};
+                        grouped[cat].forEach(b => { counts[b.seriesName] = (counts[b.seriesName] || 0) + 1; b.groupIndex = counts[b.seriesName]; });
                     });
                     return grouped;
                 },
@@ -288,9 +309,7 @@
                             this.rawItems.push({ id: `id-${Math.random()}`, batchId: bId, name, series: this.newItem.series, category: this.newItem.category, type });
                         });
                     });
-                    this.saveData();
-                    if (this.addMode === 'member') { this.currentMember = this.newItem.name; this.showInput = false; }
-                    else { alert('新增成功！'); this.batchMemberNames = []; }
+                    this.saveData(); if (this.addMode === 'member') { this.currentMember = this.newItem.name; this.showInput = false; } else { alert('新增成功！'); this.batchMemberNames = []; }
                 },
                 removeSeries(bId) { if(confirm(`確定刪除？`)) { this.rawItems = this.rawItems.filter(i => (i.batchId || i.series) !== bId); delete this.seriesImages[bId]; this.saveData(); } },
                 removeImage(bId) { if(confirm('確定刪除圖片？')) { delete this.seriesImages[bId]; this.saveData(); } },
