@@ -7,8 +7,6 @@
 
     <!-- Vue 3 -->
     <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.prod.js"></script>
-    <!-- idb-keyval -->
-    <script src="https://cdn.jsdelivr.net/npm/idb-keyval@6/dist/umd/idb-keyval-iife.min.js"></script>
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -463,376 +461,451 @@
 
     <!-- APP SCRIPT -->
     <script>
-        (function () {
-            const { createApp, nextTick } = window.Vue || {};
+(function () {
+    const { createApp, nextTick } = window.Vue || {};
 
-            if (!createApp) {
-                console.error('Vue 沒有正確載入，請檢查 CDN。');
-                return;
-            }
+    if (!createApp) {
+        console.error('Vue 沒有正確載入，請檢查 CDN。');
+        return;
+    }
 
-            // idbKeyval 防呆
-            let get = async () => null;
-            let set = async () => {};
-            let clear = async () => {};
+    // --- 這裡開始：我們自己做一個簡單的 IndexedDB key-value 封裝 ---
 
-            if (window.idbKeyval) {
-                ({ get, set, clear } = window.idbKeyval);
-            } else {
-                console.warn('idbKeyval 沒載到，只會使用 localStorage。');
-            }
-
-            createApp({
-                data() {
-                    return {
-                        viewMode: 'member',
-                        addMode: 'member',
-                        showInput: false,
-                        currentMember: null,
-                        selectedGen: '',
-                        selectedCategory: '',
-                        selectedPreset: '',
-                        batchMemberNames: [],
-                        presetMembers: {"二期生": ["遠藤光莉", "大園玲", "大沼晶保", "幸阪茉里乃", "武元唯衣", "田村保乃", "藤吉夏鈴", "増本綺良", "松田里奈", "森田ひかる", "守屋麗奈", "山﨑天"], "三期生": ["石森璃花", "遠藤理子", "小田倉麗奈", "小島凪紗", "谷口愛季", "中嶋優月", "的野美青", "向井純葉", "村井優", "村山美羽", "山下瞳月"], "四期生": ["浅井恋乃未", "稲熊ひな", "勝又春", "佐藤愛桜", "中川智尋", "松本和子", "目黒陽色", "山川宇衣", "山田桃実"], "畢業生": ["松平璃子", "守屋茜", "渡邉梨加", "渡邉理佐", "原田葵", "尾関梨香", "菅井友香", "関有美子", "土生瑞穂", "小林由依", "齋藤冬優花", "上村莉菜", "小池美波", "井上梨名"]},
-                    categorizedSeries: {"封入": ["1st Single「Nobody's fault」封入", "2nd Single「BAN」封入", "3rd Single「流れ弾」封入", "4th Single「五月雨よ」封入", "1st Album「As you know?」封入", "5th Single「桜月」封入", "6th Single「Start over!」封入", "7th Single「承認欲求」封入", "8th Single「何歳の頃に戻りたいのか?」 封入", "9th Single「自業自得」封入", "10th Single「I want tomorrow to come」封入", "11th Single「UDAGAWA GENERATION」封入", "2nd Album「Addiction」封入", "12th Single「Make or Break」封入", "13th Single「Unhappy birthday構文」封入", "14th Single「The growing up train」封入"], "MV衣裝": ["「Nobody's fault」MVロケーション衣装", "「なぜ恋をして来なかったんだろう?」MVロケーション衣装", "「Buddies」MVロケーション衣装", "「BAN」MVロケーション衣装", "「偶然の答え」MVロケーション衣装", "「思ったよりも寂しくはない」MVロケーション衣装", "「流れ弾」MVロケーション衣装", "「Dead end」MVロケーション衣装", "「無言の宇宙」MVロケーション衣装", "「Dead end」MVロケーション衣装", "「流れ弾」MV黒衣装", "「五月雨よ」MVロケーション衣装", "「五月雨よ」MVパフォーマンス衣装", "「車間距離」MVロケーション衣装", "「僕のジレンマ」MVロケーション衣装", "「摩擦係数」MV衣装", "「桜月」MV衣装", "「桜月」MV青衣装", "「Cool」MV衣装", "「夏の近道」 MV衣装", "「夏の近道」 MV制服", "「BAN」 MV衣装", "「Start over!」MV衣装", "「ドローン旋回中」MV衣装", "「静寂の暴力」 MV衣装", "「Nobody's fault」MV衣装", "「承認欲求」MV衣装", "「マモリビト」 MV衣装", "「隙間風よ」MV衣装", "「何歳の頃に戻りたいのか?」MV衣装", "「何度 LOVE SONG の歌詞を読み返しただろう」 MV衣装", "「油を注せ!」 MV衣装", "「自業自得」MV衣装", "「愛し合いなさい」 MV衣装", "「引きこもる時間はない」 MV衣装", "「I want tomorrow to come」MV衣装", "「本質的なこと」 MV衣装", "「僕は僕を好きになれない」 MV衣装", "「UDAGAWA GENERATION」MV衣装", "「Nothing Special」MV衣装", "「Nightmare 症候群」MV衣装", "「Addiction」 MV衣装", "「Make or Break」 MV衣装", "「港区パセリ」 MV衣装", "「死んだふり」MV衣装", "「Unhappy birthday構文」MV衣装", "「木枯らしは泣かない」MV衣装", "「Alter ego」MV衣装", "「The growing up train」MV衣装"], "封面": ["流れ弾ジャケット写真衣装", "「Start over!」 ジャケット写真衣装", "「承認欲求」ジャケット写真衣装", "「何歳の頃に戻りたいのか?」ジャケット写真衣装", "「自業自得」ジャケット写真衣装", "「I want tomorrow to come」ジャケット写真衣装", "「UDAGAWA GENERATION」ジャケット写真衣装", "「Make or Break」ジャケット写真衣装", "「Unhappy birthday構文」ジャケット写真衣装", "「The growing up train」ジャケット写真衣装"], "LIVE衣裝": ["三期生ブックレット衣装", "「3rd TOUR 2023」オープニング衣装", "「3rd TOUR 2023」白スーツ衣装", "2023年夏フェス衣装", "「3rd Single BACKS LIVE!!」衣装", "「3rd TOUR 2023」ピンク衣装", "「3rd YEAR ANNIVERSARY LIVE」ライブ衣装", "「7th Single BACKS LIVE!!」オープニング衣装", "「小林由依 卒業コンサート」ライブ衣装", "「小林由依 卒業コンサート」赤衣装", "「3rd TOUR 2023」ライブ衣装", "2023年 年末歌唱衣装", "「8th Single BACKS LIVE!!」ライブ衣装", "「4th ARENA TOUR 2024」ライブ衣装", "「3rd YEAR ANNIVERSARY LIVE」ライブ衣装", "「4th ARENA TOUR IN 東京ドーム」オープニング衣装", "「9th Single BACKS LIVE!!」オープニング衣装", "2023年 年末衣装", "2024年夏フェス衣装", "「4th ARENA TOUR」オープニング衣装", "「4th YEAR ANNIVERSARY LIVE」ライブ衣装", "「4th ARENA TOUR」ライブ衣装", "「三期生ライブ」オープニング衣装", "「4th ARENA TOUR IN 東京ドーム」ライブ衣装", "「10th Single BACKS LIVE!!」ライブ衣装", "「5th TOUR 2025 “Addiction”」ライブ衣装", "「三期生ライブ」衣装", "「12th Single BACKS LIVE!!」ライブ衣装", "「5th TOUR 2025 “Addiction”」黑衣装", "「12th Single BACKS LIVE!!」黑衣装"], "其他": ["2023年 冬私服コーデ", "スーツコーデ", "カラーコーデ", "サマーワンピース", "デニムコーデ", "2023年 ハロウィン衣装", "2023年 クリスマスサンタ衣装", "2023年 読書コーデ", "2024年 振袖衣装", "おうちコーデ", "ジャンプスーツ", "2024年 春私服コーデ", "カラーデニム", "2024年浴衣", "麥わら帽子コーデ", "Tシャツコーデ", "ワイシャツコーデ", "2024年 ハロウィン衣装", "カラーニットコーデ", "2024年 クリスマスサンタ衣装", "どうぶつ着ぐるみ", "マフラーコーデ", "2025年振袖", "いぬみみコーデ", "モードコーデ", "冬私服コーデ", "ネクタイコーデ", "レザージャケットコーデ", "2025年浴衣", "ポロシャツコーデ", "クラシックコーデ", "チェックコーデ", "パイレーツ衣装", "冬服", "2025年 サンタ衣装", "スタイリング制服", "2026年 振袖", "ジャージ", "2026年 バレンタインコーデ"], "特殊": ["【会場予約特典】 東京ドーム限定成員生寫真", "東京ドーム完賣御禮紀念!! ライブ會場撮りおろしプレミアム生寫真", "福袋 2025 「4th ARENA TOUR IN 東京ドーム」 オープニング衣装", "福袋 2026 MV衣装"]},
-                        newItem: { name: '', series: '', category: '' },
-                        rawItems: [],
-                        ownedIds: new Set(),
-                        seriesImages: {},
-                        expandedSeries: new Set(),
-                        expandedSeriesMode: new Set(),
-                        zoomedImg: null
-                    };
-                },
-                computed: {
-                    memberList() {
-                        return [...new Set(this.rawItems.map(i => i.name))];
-                    },
-
-                    // 系列模式分組＋SET 編號
-                    itemsBySeriesNormalized() {
-                        const grouped = {};
-
-                        this.rawItems.forEach(item => {
-                            const cat = item.category || '其他';
-                            if (!grouped[cat]) grouped[cat] = {};
-                            if (!grouped[cat][item.series]) grouped[cat][item.series] = [];
-
-                            let batch = grouped[cat][item.series].find(b => b.batchId === item.batchId);
-                            if (!batch) {
-                                batch = {
-                                    batchId: item.batchId,
-                                    seriesName: item.series,
-                                    memberName: item.name,
-                                    items: []
-                                };
-                                grouped[cat][item.series].push(batch);
-                            }
-                            batch.items.push(item);
-                        });
-
-                        // 補上 totalSets & groupIndex
-                        Object.values(grouped).forEach(seriesObj => {
-                            Object.values(seriesObj).forEach(batches => {
-                                const byMember = {};
-                                batches.forEach(b => {
-                                    if (!byMember[b.memberName]) byMember[b.memberName] = [];
-                                    byMember[b.memberName].push(b);
-                                });
-
-                                Object.values(byMember).forEach(list => {
-                                    const total = list.length;
-                                    list.sort((a, b) => a.batchId.localeCompare(b.batchId));
-                                    list.forEach((b, idx) => {
-                                        b.totalSets = total;
-                                        b.groupIndex = idx + 1;
-                                    });
-                                });
-                            });
-                        });
-
-                        return grouped;
-                    },
-
-                    // 成員模式分組＋SET 編號
-                    memberItemsGrouped() {
-                        if (!this.currentMember) return [];
-
-                        const groupedMap = {};
-
-                        this.rawItems
-                            .filter(i => i.name === this.currentMember)
-                            .forEach(item => {
-                                const cat = item.category || '其他';
-                                if (!groupedMap[cat]) {
-                                    groupedMap[cat] = { category: cat, items: [] };
-                                }
-
-                                let batch = groupedMap[cat].items.find(b => b.batchId === item.batchId);
-                                if (!batch) {
-                                    batch = {
-                                        batchId: item.batchId,
-                                        seriesName: item.series,
-                                        items: []
-                                    };
-                                    groupedMap[cat].items.push(batch);
-                                }
-                                batch.items.push(item);
-                            });
-
-                        Object.values(groupedMap).forEach(catBlock => {
-                            const bySeries = {};
-                            catBlock.items.forEach(b => {
-                                if (!bySeries[b.seriesName]) bySeries[b.seriesName] = [];
-                                bySeries[b.seriesName].push(b);
-                            });
-
-                            Object.values(bySeries).forEach(list => {
-                                const total = list.length;
-                                list.sort((a, b) => a.batchId.localeCompare(b.batchId));
-                                list.forEach((b, idx) => {
-                                    b.totalSets = total;
-                                    b.groupIndex = idx + 1;
-                                });
-                            });
-                        });
-
-                        return Object.values(groupedMap);
-                    }
-                },
-                async mounted() {
+    function createStorage() {
+        // 如果瀏覽器不支援 IndexedDB，就退回 localStorage（容量有限，但至少不會壞）
+        if (!('indexedDB' in window)) {
+            console.warn('此裝置不支援 IndexedDB，將使用 localStorage，圖片容量可能較小。');
+            const PREFIX = 'sakura_kv_';
+            return {
+                async get(key) {
                     try {
-                        const [r, o, s] = await Promise.all([
-                            get('raw_items'),
-                            get('owned_photos'),
-                            get('series_images')
-                        ]);
-
-                        if (r && Array.isArray(r)) this.rawItems = r;
-                        if (o && Array.isArray(o)) this.ownedIds = new Set(o);
-                        if (s && typeof s === 'object') this.seriesImages = s || {};
+                        const raw = localStorage.getItem(PREFIX + key);
+                        return raw ? JSON.parse(raw) : null;
                     } catch (e) {
-                        console.error('載入資料錯誤：', e);
+                        console.error('localStorage get 錯誤：', e);
+                        return null;
                     }
                 },
-                methods: {
-                    async saveData() {
-                        try {
-                            localStorage.setItem(
-                                'sakura_txt',
-                                JSON.stringify({
-                                    rawItems: this.rawItems,
-                                    ownedIds: [...this.ownedIds]
-                                })
-                            );
-                            await Promise.all([
-                                set('raw_items', this.rawItems),
-                                set('owned_photos', [...this.ownedIds]),
-                                set('series_images', this.seriesImages)
-                            ]);
-                        } catch (e) {
-                            console.error('儲存資料錯誤：', e);
-                        }
-                    },
-                    onCategorySelect() {
-                        if (this.selectedCategory !== 'custom_cat') {
-                            this.newItem.category = this.selectedCategory;
-                        }
-                        this.selectedPreset = '';
-                    },
-                    onSeriesSelect() {
-                        if (this.selectedPreset !== 'custom_series') {
-                            this.newItem.series = this.selectedPreset;
-                        }
-                    },
-                    getUniqueMemberCount(batches) {
-                        return [...new Set(batches.map(b => b.memberName))].length;
-                    },
-                    getMemberOwnedCount(name) {
-                        return this.rawItems.filter(
-                            i => i.name === name && this.ownedIds.has(i.id)
-                        ).length;
-                    },
-                    getProgress(items) {
-                        return { count: items.filter(i => this.ownedIds.has(i.id)).length };
-                    },
-                    getActiveMembersInGen(gen) {
-                        return this.presetMembers[gen].filter(name =>
-                            this.memberList.includes(name)
-                        );
-                    },
-                    toggleSeries(id) {
-                        if (this.expandedSeries.has(id)) this.expandedSeries.delete(id);
-                        else this.expandedSeries.add(id);
-                    },
-                    toggleSeriesMode(cat, sName) {
-                        const key = cat + sName;
-                        if (this.expandedSeriesMode.has(key)) this.expandedSeriesMode.delete(key);
-                        else this.expandedSeriesMode.add(key);
-                    },
-                    async toggleItem(id) {
-                        if (this.ownedIds.has(id)) this.ownedIds.delete(id);
-                        else this.ownedIds.add(id);
-                        await this.saveData();
-                    },
-                    async removeSeries(bId) {
-                        if (confirm('確定刪除？')) {
-                            this.rawItems = this.rawItems.filter(i => i.batchId !== bId);
-                            delete this.seriesImages[bId];
-                            await this.saveData();
-                        }
-                    },
-                    async removeImage(bId) {
-                        if (confirm('刪除圖片？')) {
-                            delete this.seriesImages[bId];
-                            await this.saveData();
-                        }
-                    },
-                    async handleSeriesImageUpload(event, bId) {
-                        const file = event.target.files[0];
-                        if (!file) return;
-
-                        const reader = new FileReader();
-                        reader.onload = e => {
-                            const img = new Image();
-                            img.onload = async () => {
-                                const canvas = document.createElement('canvas');
-                                const MAX_WIDTH = 800;
-                                canvas.width = MAX_WIDTH;
-                                canvas.height = img.height * (MAX_WIDTH / img.width);
-                                const ctx = canvas.getContext('2d');
-                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                                this.seriesImages[bId] = canvas.toDataURL('image/jpeg', 0.5);
-                                await this.saveData();
-                            };
-                            img.src = e.target.result;
-                        };
-                        reader.readAsDataURL(file);
-                    },
-                    async addBatchItems() {
-                        const names =
-                            this.addMode === 'member' ? [this.newItem.name] : this.batchMemberNames;
-
-                        if (!names.length || !this.newItem.series || !this.newItem.category) {
-                            alert('請先選擇成員 / 分類 / 系列');
-                            return;
-                        }
-
-                        const tempCategory = this.newItem.category;
-                        const tempSeries = this.newItem.series;
-
-                        let lastBId = '';
-
-                        names.forEach(name => {
-                            const bId =
-                                'b-' +
-                                Date.now() +
-                                Math.random().toString(36).substr(2, 5);
-                            lastBId = bId;
-
-                            ['ヨリ', 'チュウ', 'ヒキ', '座り'].forEach(type => {
-                                this.rawItems.push({
-                                    id: Math.random().toString(36).substr(2, 9),
-                                    batchId: bId,
-                                    name,
-                                    series: tempSeries,
-                                    category: tempCategory,
-                                    type
-                                });
-                            });
+                async set(key, value) {
+                    try {
+                        localStorage.setItem(PREFIX + key, JSON.stringify(value));
+                    } catch (e) {
+                        console.error('localStorage set 錯誤：', e);
+                    }
+                },
+                async clear() {
+                    try {
+                        Object.keys(localStorage).forEach(k => {
+                            if (k.startsWith(PREFIX)) localStorage.removeItem(k);
                         });
-
-                        await this.saveData();
-                        this.showInput = false;
-
-                        const finalScroll = id => {
-                            const el = document.getElementById(id);
-                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        };
-
-                        if (this.addMode === 'member') {
-                            this.currentMember = names[0];
-                            nextTick(() => {
-                                this.expandedSeries.add(lastBId);
-                                setTimeout(() => finalScroll('batch-target-' + lastBId), 400);
-                            });
-                        } else {
-                            this.viewMode = 'series';
-                            nextTick(() => {
-                                this.expandedSeriesMode.add(tempCategory + tempSeries);
-                                setTimeout(() => finalScroll('series-target-' + tempSeries), 400);
-                            });
-                            this.batchMemberNames = [];
-                        }
-
-                        // 重置表單
-                        this.newItem = { name: '', series: '', category: '' };
-                        this.selectedGen = '';
-                        this.selectedCategory = '';
-                        this.selectedPreset = '';
-                    },
-                    async exportData() {
-                        const data = {
-                            rawItems: this.rawItems,
-                            ownedIds: [...this.ownedIds],
-                            seriesImages: this.seriesImages
-                        };
-                        const blob = new Blob([JSON.stringify(data)], {
-                            type: 'text/plain'
-                        });
-                        const a = document.createElement('a');
-                        a.href = URL.createObjectURL(blob);
-                        a.download = `sakura_backup.txt`;
-                        a.click();
-                    },
-                    async importDataFromFile(event) {
-                        const file = event.target.files[0];
-                        if (!file) return;
-
-                        try {
-                            const text = await file.text();
-                            const json = JSON.parse(text);
-
-                            if (!json || typeof json !== 'object') {
-                                throw new Error('JSON 格式錯誤');
-                            }
-
-                            const { rawItems, ownedIds, seriesImages } = json;
-
-                            if (!Array.isArray(rawItems)) {
-                                throw new Error('rawItems 格式錯誤');
-                            }
-
-                            this.rawItems = rawItems;
-                            this.ownedIds = new Set(Array.isArray(ownedIds) ? ownedIds : []);
-                            this.seriesImages = seriesImages && typeof seriesImages === 'object'
-                                ? seriesImages
-                                : {};
-
-                            await this.saveData();
-                            alert('還原完成！');
-                            // 清空 input 值，避免同檔案再選一次無法觸發 change
-                            event.target.value = '';
-                        } catch (e) {
-                            console.error('還原失敗：', e);
-                            alert('還原失敗：檔案格式可能有問題，或不是正確的備份檔。');
-                            event.target.value = '';
-                        }
-                    },
-                    async clearAll() {
-                        if (confirm('清空所有資料？')) {
-                            try {
-                                await clear();
-                            } catch (e) {
-                                console.error('清空 idbKeyval 失敗：', e);
-                            }
-                            localStorage.removeItem('sakura_txt');
-                            location.reload();
-                        }
+                    } catch (e) {
+                        console.error('localStorage clear 錯誤：', e);
                     }
                 }
-            }).mount('#app');
-        })();
-    </script>
+            };
+        }
+
+        const DB_NAME = 'sakura_collection_db';
+        const STORE_NAME = 'kv';
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_NAME, 1);
+                req.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function get(key) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.get(key);
+                req.onsuccess = () => resolve(req.result ?? null);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function set(key, value) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.put(value, key);
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function clear() {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.clear();
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        console.log('使用 IndexedDB 儲存資料。');
+        return { get, set, clear };
+    }
+
+    const { get, set, clear } = createStorage();
+
+    // --- 下面開始是你的 Vue App，本體邏輯幾乎不變，只是把 idbKeyval 換成上面的 get/set/clear ---
+
+    createApp({
+        data() {
+            return {
+                viewMode: 'member',
+                addMode: 'member',
+                showInput: false,
+                currentMember: null,
+                selectedGen: '',
+                selectedCategory: '',
+                selectedPreset: '',
+                batchMemberNames: [],
+                presetMembers: {"二期生": ["遠藤光莉", "大園玲", "大沼晶保", "幸阪茉里乃", "武元唯衣", "田村保乃", "藤吉夏鈴", "増本綺良", "松田里奈", "森田ひかる", "守屋麗奈", "山﨑天"], "三期生": ["石森璃花", "遠藤理子", "小田倉麗奈", "小島凪紗", "谷口愛季", "中嶋優月", "的野美青", "向井純葉", "村井優", "村山美羽", "山下瞳月"], "四期生": ["浅井恋乃未", "稲熊ひな", "勝又春", "佐藤愛桜", "中川智尋", "松本和子", "目黒陽色", "山川宇衣", "山田桃実"], "畢業生": ["松平璃子", "守屋茜", "渡邉梨加", "渡邉理佐", "原田葵", "尾関梨香", "菅井友香", "関有美子", "土生瑞穂", "小林由依", "齋藤冬優花", "上村莉菜", "小池美波", "井上梨名"]},
+                    categorizedSeries: {"封入": ["1st Single「Nobody's fault」封入", "2nd Single「BAN」封入", "3rd Single「流れ弾」封入", "4th Single「五月雨よ」封入", "1st Album「As you know?」封入", "5th Single「桜月」封入", "6th Single「Start over!」封入", "7th Single「承認欲求」封入", "8th Single「何歳の頃に戻りたいのか?」 封入", "9th Single「自業自得」封入", "10th Single「I want tomorrow to come」封入", "11th Single「UDAGAWA GENERATION」封入", "2nd Album「Addiction」封入", "12th Single「Make or Break」封入", "13th Single「Unhappy birthday構文」封入", "14th Single「The growing up train」封入"], "MV衣裝": ["「Nobody's fault」MVロケーション衣装", "「なぜ恋をして来なかったんだろう?」MVロケーション衣装", "「Buddies」MVロケーション衣装", "「BAN」MVロケーション衣装", "「偶然の答え」MVロケーション衣装", "「思ったよりも寂しくはない」MVロケーション衣装", "「流れ弾」MVロケーション衣装", "「Dead end」MVロケーション衣装", "「無言の宇宙」MVロケーション衣装", "「Dead end」MVロケーション衣装", "「流れ弾」MV黒衣装", "「五月雨よ」MVロケーション衣装", "「五月雨よ」MVパフォーマンス衣装", "「車間距離」MVロケーション衣装", "「僕のジレンマ」MVロケーション衣装", "「摩擦係数」MV衣装", "「桜月」MV衣装", "「桜月」MV青衣装", "「Cool」MV衣装", "「夏の近道」 MV衣装", "「夏の近道」 MV制服", "「BAN」 MV衣装", "「Start over!」MV衣装", "「ドローン旋回中」MV衣装", "「静寂の暴力」 MV衣装", "「Nobody's fault」MV衣装", "「承認欲求」MV衣装", "「マモリビト」 MV衣装", "「隙間風よ」MV衣装", "「何歳の頃に戻りたいのか?」MV衣装", "「何度 LOVE SONG の歌詞を読み返しただろう」 MV衣装", "「油を注せ!」 MV衣装", "「自業自得」MV衣装", "「愛し合いなさい」 MV衣装", "「引きこもる時間はない」 MV衣装", "「I want tomorrow to come」MV衣装", "「本質的なこと」 MV衣装", "「僕は僕を好きになれない」 MV衣装", "「UDAGAWA GENERATION」MV衣装", "「Nothing Special」MV衣装", "「Nightmare 症候群」MV衣装", "「Addiction」 MV衣装", "「Make or Break」 MV衣装", "「港区パセリ」 MV衣装", "「死んだふり」MV衣装", "「Unhappy birthday構文」MV衣装", "「木枯らしは泣かない」MV衣装", "「Alter ego」MV衣装", "「The growing up train」MV衣装"], "封面": ["流れ弾ジャケット写真衣装", "「Start over!」 ジャケット写真衣装", "「承認欲求」ジャケット写真衣装", "「何歳の頃に戻りたいのか?」ジャケット写真衣装", "「自業自得」ジャケット写真衣装", "「I want tomorrow to come」ジャケット写真衣装", "「UDAGAWA GENERATION」ジャケット写真衣装", "「Make or Break」ジャケット写真衣装", "「Unhappy birthday構文」ジャケット写真衣装", "「The growing up train」ジャケット写真衣装"], "LIVE衣裝": ["三期生ブックレット衣装", "「3rd TOUR 2023」オープニング衣装", "「3rd TOUR 2023」白スーツ衣装", "2023年夏フェス衣装", "「3rd Single BACKS LIVE!!」衣装", "「3rd TOUR 2023」ピンク衣装", "「3rd YEAR ANNIVERSARY LIVE」ライブ衣装", "「7th Single BACKS LIVE!!」オープニング衣装", "「小林由依 卒業コンサート」ライブ衣装", "「小林由依 卒業コンサート」赤衣装", "「3rd TOUR 2023」ライブ衣装", "2023年 年末歌唱衣装", "「8th Single BACKS LIVE!!」ライブ衣装", "「4th ARENA TOUR 2024」ライブ衣装", "「3rd YEAR ANNIVERSARY LIVE」ライブ衣装", "「4th ARENA TOUR IN 東京ドーム」オープニング衣装", "「9th Single BACKS LIVE!!」オープニング衣装", "2023年 年末衣装", "2024年夏フェス衣装", "「4th ARENA TOUR」オープニング衣装", "「4th YEAR ANNIVERSARY LIVE」ライブ衣装", "「4th ARENA TOUR」ライブ衣装", "「三期生ライブ」オープニング衣装", "「4th ARENA TOUR IN 東京ドーム」ライブ衣装", "「10th Single BACKS LIVE!!」ライブ衣装", "「5th TOUR 2025 “Addiction”」ライブ衣装", "「三期生ライブ」衣装", "「12th Single BACKS LIVE!!」ライブ衣装", "「5th TOUR 2025 “Addiction”」黑衣装", "「12th Single BACKS LIVE!!」黑衣装"], "其他": ["2023年 冬私服コーデ", "スーツコーデ", "カラーコーデ", "サマーワンピース", "デニムコーデ", "2023年 ハロウィン衣装", "2023年 クリスマスサンタ衣装", "2023年 読書コーデ", "2024年 振袖衣装", "おうちコーデ", "ジャンプスーツ", "2024年 春私服コーデ", "カラーデニム", "2024年浴衣", "麥わら帽子コーデ", "Tシャツコーデ", "ワイシャツコーデ", "2024年 ハロウィン衣装", "カラーニットコーデ", "2024年 クリスマスサンタ衣装", "どうぶつ着ぐるみ", "マフラーコーデ", "2025年振袖", "いぬみみコーデ", "モードコーデ", "冬私服コーデ", "ネクタイコーデ", "レザージャケットコーデ", "2025年浴衣", "ポロシャツコーデ", "クラシックコーデ", "チェックコーデ", "パイレーツ衣装", "冬服", "2025年 サンタ衣装", "スタイリング制服", "2026年 振袖", "ジャージ", "2026年 バレンタインコーデ"], "特殊": ["【会場予約特典】 東京ドーム限定成員生寫真", "東京ドーム完賣御禮紀念!! ライブ會場撮りおろしプレミアム生寫真", "福袋 2025 「4th ARENA TOUR IN 東京ドーム」 オープニング衣装", "福袋 2026 MV衣装"]},
+                newItem: { name: '', series: '', category: '' },
+                rawItems: [],
+                ownedIds: new Set(),
+                seriesImages: {},
+                expandedSeries: new Set(),
+                expandedSeriesMode: new Set(),
+                zoomedImg: null
+            };
+        },
+        computed: {
+            memberList() {
+                return [...new Set(this.rawItems.map(i => i.name))];
+            },
+            // 系列模式分組＋SET 編號
+            itemsBySeriesNormalized() {
+                const grouped = {};
+                this.rawItems.forEach(item => {
+                    const cat = item.category || '其他';
+                    if (!grouped[cat]) grouped[cat] = {};
+                    if (!grouped[cat][item.series]) grouped[cat][item.series] = [];
+
+                    let batch = grouped[cat][item.series].find(b => b.batchId === item.batchId);
+                    if (!batch) {
+                        batch = {
+                            batchId: item.batchId,
+                            seriesName: item.series,
+                            memberName: item.name,
+                            items: []
+                        };
+                        grouped[cat][item.series].push(batch);
+                    }
+                    batch.items.push(item);
+                });
+
+                Object.values(grouped).forEach(seriesObj => {
+                    Object.values(seriesObj).forEach(batches => {
+                        const byMember = {};
+                        batches.forEach(b => {
+                            if (!byMember[b.memberName]) byMember[b.memberName] = [];
+                            byMember[b.memberName].push(b);
+                        });
+                        Object.values(byMember).forEach(list => {
+                            const total = list.length;
+                            list.sort((a, b) => a.batchId.localeCompare(b.batchId));
+                            list.forEach((b, idx) => {
+                                b.totalSets = total;
+                                b.groupIndex = idx + 1;
+                            });
+                        });
+                    });
+                });
+
+                return grouped;
+            },
+            // 成員模式分組＋SET 編號
+            memberItemsGrouped() {
+                if (!this.currentMember) return [];
+                const groupedMap = {};
+
+                this.rawItems
+                    .filter(i => i.name === this.currentMember)
+                    .forEach(item => {
+                        const cat = item.category || '其他';
+                        if (!groupedMap[cat]) {
+                            groupedMap[cat] = { category: cat, items: [] };
+                        }
+                        let batch = groupedMap[cat].items.find(b => b.batchId === item.batchId);
+                        if (!batch) {
+                            batch = {
+                                batchId: item.batchId,
+                                seriesName: item.series,
+                                items: []
+                            };
+                            groupedMap[cat].items.push(batch);
+                        }
+                        batch.items.push(item);
+                    });
+
+                Object.values(groupedMap).forEach(catBlock => {
+                    const bySeries = {};
+                    catBlock.items.forEach(b => {
+                        if (!bySeries[b.seriesName]) bySeries[b.seriesName] = [];
+                        bySeries[b.seriesName].push(b);
+                    });
+                    Object.values(bySeries).forEach(list => {
+                        const total = list.length;
+                        list.sort((a, b) => a.batchId.localeCompare(b.batchId));
+                        list.forEach((b, idx) => {
+                            b.totalSets = total;
+                            b.groupIndex = idx + 1;
+                        });
+                    });
+                });
+
+                return Object.values(groupedMap);
+            }
+        },
+        async mounted() {
+            try {
+                // 從 IndexedDB / localStorage 還原
+                const [r, o, s] = await Promise.all([
+                    get('raw_items'),
+                    get('owned_photos'),
+                    get('series_images')
+                ]);
+                if (r && Array.isArray(r)) this.rawItems = r;
+                if (o && Array.isArray(o)) this.ownedIds = new Set(o);
+                if (s && typeof s === 'object') this.seriesImages = s || {};
+            } catch (e) {
+                console.error('載入資料錯誤：', e);
+            }
+        },
+        methods: {
+            async saveData() {
+                try {
+                    // localStorage 簡單備份（只有文字＋擁有狀態）
+                    localStorage.setItem(
+                        'sakura_txt',
+                        JSON.stringify({
+                            rawItems: this.rawItems,
+                            ownedIds: [...this.ownedIds]
+                        })
+                    );
+                    // 圖片等全部存到 IndexedDB / fallback storage
+                    await Promise.all([
+                        set('raw_items', this.rawItems),
+                        set('owned_photos', [...this.ownedIds]),
+                        set('series_images', this.seriesImages)
+                    ]);
+                } catch (e) {
+                    console.error('儲存資料錯誤：', e);
+                }
+            },
+            onCategorySelect() {
+                if (this.selectedCategory !== 'custom_cat') {
+                    this.newItem.category = this.selectedCategory;
+                }
+                this.selectedPreset = '';
+            },
+            onSeriesSelect() {
+                if (this.selectedPreset !== 'custom_series') {
+                    this.newItem.series = this.selectedPreset;
+                }
+            },
+            getUniqueMemberCount(batches) {
+                return [...new Set(batches.map(b => b.memberName))].length;
+            },
+            getMemberOwnedCount(name) {
+                return this.rawItems.filter(
+                    i => i.name === name && this.ownedIds.has(i.id)
+                ).length;
+            },
+            getProgress(items) {
+                return { count: items.filter(i => this.ownedIds.has(i.id)).length };
+            },
+            getActiveMembersInGen(gen) {
+                return this.presetMembers[gen].filter(name =>
+                    this.memberList.includes(name)
+                );
+            },
+            toggleSeries(id) {
+                if (this.expandedSeries.has(id)) this.expandedSeries.delete(id);
+                else this.expandedSeries.add(id);
+            },
+            toggleSeriesMode(cat, sName) {
+                const key = cat + sName;
+                if (this.expandedSeriesMode.has(key)) this.expandedSeriesMode.delete(key);
+                else this.expandedSeriesMode.add(key);
+            },
+            async toggleItem(id) {
+                if (this.ownedIds.has(id)) this.ownedIds.delete(id);
+                else this.ownedIds.add(id);
+                await this.saveData();
+            },
+            async removeSeries(bId) {
+                if (confirm('確定刪除？')) {
+                    this.rawItems = this.rawItems.filter(i => i.batchId !== bId);
+                    delete this.seriesImages[bId];
+                    await this.saveData();
+                }
+            },
+            async removeImage(bId) {
+                if (confirm('刪除圖片？')) {
+                    delete this.seriesImages[bId];
+                    await this.saveData();
+                }
+            },
+            async handleSeriesImageUpload(event, bId) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = new Image();
+                    img.onload = async () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * (MAX_WIDTH / img.width);
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        this.seriesImages[bId] = canvas.toDataURL('image/jpeg', 0.5);
+                        await this.saveData();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            },
+            async addBatchItems() {
+                const names =
+                    this.addMode === 'member' ? [this.newItem.name] : this.batchMemberNames;
+
+                if (!names.length || !this.newItem.series || !this.newItem.category) {
+                    alert('請先選擇成員 / 分類 / 系列');
+                    return;
+                }
+
+                const tempCategory = this.newItem.category;
+                const tempSeries = this.newItem.series;
+
+                let lastBId = '';
+
+                names.forEach(name => {
+                    const bId =
+                        'b-' +
+                        Date.now() +
+                        Math.random().toString(36).substr(2, 5);
+                    lastBId = bId;
+
+                    ['ヨリ', 'チュウ', 'ヒキ', '座り'].forEach(type => {
+                        this.rawItems.push({
+                            id: Math.random().toString(36).substr(2, 9),
+                            batchId: bId,
+                            name,
+                            series: tempSeries,
+                            category: tempCategory,
+                            type
+                        });
+                    });
+                });
+
+                await this.saveData();
+                this.showInput = false;
+
+                const finalScroll = id => {
+                    const el = document.getElementById(id);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                };
+
+                if (this.addMode === 'member') {
+                    this.currentMember = names[0];
+                    nextTick(() => {
+                        this.expandedSeries.add(lastBId);
+                        setTimeout(() => finalScroll('batch-target-' + lastBId), 400);
+                    });
+                } else {
+                    this.viewMode = 'series';
+                    nextTick(() => {
+                        this.expandedSeriesMode.add(tempCategory + tempSeries);
+                        setTimeout(() => finalScroll('series-target-' + tempSeries), 400);
+                    });
+                    this.batchMemberNames = [];
+                }
+
+                this.newItem = { name: '', series: '', category: '' };
+                this.selectedGen = '';
+                this.selectedCategory = '';
+                this.selectedPreset = '';
+            },
+            async exportData() {
+                const data = {
+                    rawItems: this.rawItems,
+                    ownedIds: [...this.ownedIds],
+                    seriesImages: this.seriesImages
+                };
+                const blob = new Blob([JSON.stringify(data)], {
+                    type: 'text/plain'
+                });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `sakura_backup.txt`;
+                a.click();
+            },
+            async importDataFromFile(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                try {
+                    const text = await file.text();
+                    const json = JSON.parse(text);
+
+                    if (!json || typeof json !== 'object') {
+                        throw new Error('JSON 格式錯誤');
+                    }
+
+                    const { rawItems, ownedIds, seriesImages } = json;
+
+                    if (!Array.isArray(rawItems)) {
+                        throw new Error('rawItems 格式錯誤');
+                    }
+
+                    this.rawItems = rawItems;
+                    this.ownedIds = new Set(Array.isArray(ownedIds) ? ownedIds : []);
+                    this.seriesImages = seriesImages && typeof seriesImages === 'object'
+                        ? seriesImages
+                        : {};
+
+                    await this.saveData();
+                    alert('還原完成！');
+                    event.target.value = '';
+                } catch (e) {
+                    console.error('還原失敗：', e);
+                    alert('還原失敗：檔案格式可能有問題，或不是正確的備份檔。');
+                    event.target.value = '';
+                }
+            },
+            async clearAll() {
+                if (confirm('清空所有資料？')) {
+                    try {
+                        await clear();
+                    } catch (e) {
+                        console.error('清空儲存失敗：', e);
+                    }
+                    localStorage.removeItem('sakura_txt');
+                    location.reload();
+                }
+            }
+        }
+    }).mount('#app');
+})();
+</script>
 </body>
 </html>
