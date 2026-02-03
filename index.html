@@ -532,15 +532,23 @@
                             @click="toggleSeries(batch.batchId)"
                         >
                             <!-- 左側：系列名稱 -->
-                            <div class="font-bold text-xs text-gray-700">
-                                {{ batch.seriesName }}
-                                <span
-                                    v-if="batch.totalSets > 1"
-                                    class="group-tag"
-                                >
-                                    SET {{ batch.groupIndex }}
-                                </span>
-                            </div>
+                            <div class="flex items-center gap-1 min-w-0">
+                             <!-- 系列名稱：單行省略 -->
+                             <span
+                               class="font-bold text-xs text-gray-700 truncate max-w-full"
+                               title="{{ batch.seriesName }}"
+                             >
+                               {{ batch.seriesName }}
+                             </span>
+
+                             <!-- SET 標籤 -->
+                             <span
+                               v-if="batch.totalSets > 1"
+                               class="group-tag shrink-0"
+                             >
+                               SET {{ batch.groupIndex }}
+                             </span>
+                           </div>
 
                             <!-- 右側：進度 + 刪除 -->
                             <div class="flex items-center gap-2">
