@@ -209,7 +209,7 @@
                     <select
                         v-model="selectedCategory"
                         @change="onCategorySelect"
-                        class="w-full border p-2.5 rounded-xl bg-white"
+                        class="w-full border p-2.5 rounded-xl bg白"
                     >
                         <option value="">-- 分類 --</option>
                         <option
@@ -268,365 +268,365 @@
                     </div>
                 </template>
 
-            <input
-                v-if="selectedCategory === 'custom_cat'"
-                v-model="newItem.category"
-                type="text"
-                placeholder="手動分類"
-                class="w-full border p-2.5 rounded-xl"
-            />
+                <input
+                    v-if="selectedCategory === 'custom_cat'"
+                    v-model="newItem.category"
+                    type="text"
+                    placeholder="手動分類"
+                    class="w-full border p-2.5 rounded-xl"
+                />
 
-            <input
-                v-if="selectedPreset === 'custom_series' || selectedCategory === 'custom_cat'"
-                v-model="newItem.series"
-                type="text"
-                placeholder="手動系列"
-                class="w-full border p-2.5 rounded-xl"
-            />
+                <input
+                    v-if="selectedPreset === 'custom_series' || selectedCategory === 'custom_cat'"
+                    v-model="newItem.series"
+                    type="text"
+                    placeholder="手動系列"
+                    class="w-full border p-2.5 rounded-xl"
+                />
 
-            <button
-                @click="addBatchItems"
-                class="w-full bg-pink-500 text-white p-3 rounded-xl font-bold shadow-lg"
-            >
-                確認新增
-            </button>
-        </div>
-
-        <!-- 備份 / 還原 / 清空 -->
-        <div class="flex items-center justify-between mt-8 border-t pt-4">
-            <div class="flex gap-3 items-center">
-                <!-- 還原資料 -->
-                <label
-                    class="text-emerald-500 font-bold text-xs cursor-pointer"
-                >
-                    還原資料
-                    <input
-                        type="file"
-                        class="hidden"
-                        accept=".txt,.json,application/json,text/plain"
-                        @change="importDataFromFile"
-                    />
-                </label>
-                <!-- 備份資料 -->
                 <button
-                    @click="exportData"
-                    class="text-blue-500 font-bold text-xs"
+                    @click="addBatchItems"
+                    class="w-full bg-pink-500 text白 p-3 rounded-xl font-bold shadow-lg"
                 >
-                    備份資料
+                    確認新增
                 </button>
             </div>
-            <button
-                @click="clearAll"
-                class="text-red-300 font-bold text-xs"
-            >
-                清空
-            </button>
+
+            <!-- 備份 / 還原 / 清空 -->
+            <div class="flex items-center justify-between mt-8 border-t pt-4">
+                <div class="flex gap-3 items-center">
+                    <!-- 還原資料 -->
+                    <label
+                        class="text-emerald-500 font-bold text-xs cursor-pointer"
+                    >
+                        還原資料
+                        <input
+                            type="file"
+                            class="hidden"
+                            accept=".txt,.json,application/json,text/plain"
+                            @change="importDataFromFile"
+                        />
+                    </label>
+                    <!-- 備份資料 -->
+                    <button
+                        @click="exportData"
+                        class="text-blue-500 font-bold text-xs"
+                    >
+                        備份資料
+                    </button>
+                </div>
+                <button
+                    @click="clearAll"
+                    class="text-red-300 font-bold text-xs"
+                >
+                    清空
+                </button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- MAIN -->
-<main class="max-w-xl mx-auto p-3">
-    <!-- 模式切換 -->
-    <div
-        v-if="!currentMember"
-        class="flex justify-center items-center gap-4 my-4"
-    >
-        <button
-            @click="viewMode = 'member'"
-            class="tab-btn"
-            :class="viewMode === 'member' ? 'tab-active' : 'text-slate-400'"
+    <!-- MAIN -->
+    <main class="max-w-xl mx-auto p-3">
+        <!-- 模式切換 -->
+        <div
+            v-if="!currentMember"
+            class="flex justify-center items-center gap-4 my-4"
         >
-            成員模式
-        </button>
-        <button
-            @click="viewMode = 'series'"
-            class="tab-btn"
-            :class="viewMode === 'series' ? 'tab-active' : 'text-slate-400'"
-        >
-            系列模式
-        </button>
-    </div>
+            <button
+                @click="viewMode = 'member'"
+                class="tab-btn"
+                :class="viewMode === 'member' ? 'tab-active' : 'text-slate-400'"
+            >
+                成員模式
+            </button>
+            <button
+                @click="viewMode = 'series'"
+                class="tab-btn"
+                :class="viewMode === 'series' ? 'tab-active' : 'text-slate-400'"
+            >
+                系列模式
+            </button>
+        </div>
 
-    <!-- 成員模式：成員列表 -->
-    <div v-if="!currentMember && viewMode === 'member'">
-        <div v-for="(ms, g) in presetMembers" :key="g">
-            <div v-if="getActiveMembersInGen(g).length > 0">
-                <h2 class="section-header">{{ g }}</h2>
-                <div class="grid grid-cols-2 gap-3">
-                    <div
-                        v-for="name in getActiveMembersInGen(g)"
-                        :key="g + '-' + name"
-                        @click="currentMember = name"
-                        class="bg-white p-5 rounded-2xl shadow-sm text-center cursor-pointer"
-                    >
-                        <div class="font-black text-gray-700">
-                            {{ name }}
-                        </div>
+        <!-- 成員模式：成員列表 -->
+        <div v-if="!currentMember && viewMode === 'member'">
+            <div v-for="(ms, g) in presetMembers" :key="g">
+                <div v-if="getActiveMembersInGen(g).length > 0">
+                    <h2 class="section-header">{{ g }}</h2>
+                    <div class="grid grid-cols-2 gap-3">
                         <div
-                            class="text-[8px] font-bold text-pink-400"
+                            v-for="name in getActiveMembersInGen(g)"
+                            :key="g + '-' + name"
+                            @click="currentMember = name"
+                            class="bg-white p-5 rounded-2xl shadow-sm text-center cursor-pointer"
                         >
-                            {{ getMemberOwnedCount(name) }} Collected
+                            <div class="font-black text-gray-700">
+                                {{ name }}
+                            </div>
+                            <div
+                                class="text-[8px] font-bold text-pink-400"
+                            >
+                                {{ getMemberOwnedCount(name) }} Collected
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                v-if="memberList.length === 0"
+                class="text-center py-24 text-slate-300 font-bold italic"
+            >
+                目前尚無收藏資料
+            </div>
+        </div>
+
+        <!-- 系列模式 -->
+        <div v-if="!currentMember && viewMode === 'series'">
+            <div v-for="(seriesObj, catName) in itemsBySeriesNormalized" :key="catName">
+                <!-- 可收合的大分類（系列模式） -->
+                <h2
+                    class="section-header flex items-center justify-between pr-4 cursor-pointer"
+                    @click="toggleCategory(catName)"
+                >
+                    <span>{{ catName }}</span>
+                    <span class="text-[10px] text-slate-400">
+                        {{ collapsedCategories.has(catName) ? '＋ 展開' : '－ 收合' }}
+                    </span>
+                </h2>
+
+                <div v-if="!collapsedCategories.has(catName)">
+                    <div
+                        v-for="(batches, seriesName) in seriesObj"
+                        :key="catName + '-' + seriesName"
+                        :id="'series-target-' + seriesName"
+                        class="mb-2 bg-white rounded-2xl shadow-sm border overflow-hidden"
+                    >
+                        <div
+                            @click="toggleSeriesMode(catName, seriesName)"
+                            class="px-4 py-3 flex justify-between items-center cursor-pointer"
+                        >
+                            <div class="font-black text-gray-600 text-[10px]">
+                                {{ seriesName }}
+                            </div>
+                            <div class="text-[9px] font-bold text-pink-400">
+                                {{ getUniqueMemberCount(batches) }} Member(s)
+                            </div>
+                        </div>
+
+                        <div
+                            v-if="expandedSeriesMode.has(catName + seriesName)"
+                            class="p-3 border-t bg-slate-50/50 space-y-3"
+                        >
+                            <div
+                                v-for="b in batches"
+                                :key="b.batchId"
+                                class="flex items-center justify-between gap-4 py-2 border-b border-gray-50 last:border-0"
+                            >
+                                <div
+                                    @click="currentMember = b.memberName"
+                                    class="text-[11px] font-bold min-w-[70px] cursor-pointer"
+                                >
+                                    {{ b.memberName }}
+                                    <span
+                                        v-if="b.totalSets > 1"
+                                        class="group-tag"
+                                    >
+                                        SET {{ b.groupIndex }}
+                                    </span>
+                                </div>
+
+                                <div class="series-photo-grid">
+                                    <div
+                                        v-for="item in b.items"
+                                        :key="item.id"
+                                        @click="toggleItem(item.id)"
+                                        class="item-slot border cursor-pointer"
+                                        :class="ownedIds.has(item.id)
+                                                ? 'bg-pink-500 border-pink-500 text-white'
+                                                : 'bg-white text-gray-200'"
+                                    >
+                                        {{item.type}}
+                                    </div>
+                                </div>
+
+                                <div
+                                    class="text-[9px] font-black"
+                                    :class="getProgress(b.items).count===4
+                                            ? 'text-green-500'
+                                            : 'text-pink-400'"
+                                >
+                                    {{ getProgress(b.items).count===4 ? 'Complete' : getProgress(b.items).count+'/4' }}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div
-            v-if="memberList.length === 0"
-            class="text-center py-24 text-slate-300 font-bold italic"
-        >
-            目前尚無收藏資料
-        </div>
-    </div>
-
-    <!-- 系列模式 -->
-    <div v-if="!currentMember && viewMode === 'series'">
-        <div v-for="(seriesObj, catName) in itemsBySeriesNormalized" :key="catName">
-            <!-- 可收合的大分類（系列模式） -->
-            <h2
-                class="section-header flex items-center justify-between pr-4 cursor-pointer"
-                @click="toggleCategory(catName)"
-            >
-                <span>{{ catName }}</span>
-                <span class="text-[10px] text-slate-400">
-                    {{ collapsedCategories.has(catName) ? '＋ 展開' : '－ 收合' }}
-                </span>
-            </h2>
-
-            <div v-if="!collapsedCategories.has(catName)">
-                <div
-                    v-for="(batches, seriesName) in seriesObj"
-                    :key="catName + '-' + seriesName"
-                    :id="'series-target-' + seriesName"
-                    class="mb-2 bg-white rounded-2xl shadow-sm border overflow-hidden"
-                >
-                    <div
-                        @click="toggleSeriesMode(catName, seriesName)"
-                        class="px-4 py-3 flex justify-between items-center cursor-pointer"
+        <!-- 成員詳細頁 -->
+        <div v-if="currentMember">
+            <div class="flex items-center justify-between mb-6 px-1">
+                <div class="flex items-center gap-2">
+                    <button
+                        @click="currentMember = null"
+                        class="text-gray-300 font-bold text-2xl px-2"
                     >
-                        <div class="font-black text-gray-600 text-[10px]">
-                            {{ seriesName }}
-                        </div>
-                        <div class="text-[9px] font-bold text-pink-400">
-                            {{ getUniqueMemberCount(batches) }} Member(s)
+                        ‹
+                    </button>
+                    <div class="relative">
+                        <select
+                            v-model="currentMember"
+                            class="appearance-none bg-transparent font-black text-2xl outline-none pr-8 cursor-pointer"
+                        >
+                            <optgroup
+                                v-for="(names, gen) in presetMembers"
+                                :key="gen"
+                                :label="gen"
+                            >
+                                <option
+                                    v-for="name in getActiveMembersInGen(gen)"
+                                    :key="gen + '-' + name"
+                                    :value="name"
+                                >
+                                    {{ name }}
+                                </option>
+                            </optgroup>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center text-pink-500"
+                        >
+                            ▼
                         </div>
                     </div>
+                </div>
+            </div>
 
+            <div
+                v-for="catBlock in memberItemsGrouped"
+                :key="catBlock.category"
+                class="mb-8"
+            >
+                <!-- 可收合的大分類（成員模式） -->
+                <h2
+                    class="section-header flex items-center justify-between pr-4 cursor-pointer"
+                    @click="toggleMemberCategory(catBlock.category)"
+                >
+                    <span>{{ catBlock.category }}</span>
+                    <span class="text-[10px] text-slate-400">
+                        {{ memberCollapsedCategories.has(catBlock.category) ? '＋ 展開' : '－ 收合' }}
+                    </span>
+                </h2>
+
+                <div v-if="!memberCollapsedCategories.has(catBlock.category)">
                     <div
-                        v-if="expandedSeriesMode.has(catName + seriesName)"
-                        class="p-3 border-t bg-slate-50/50 space-y-3"
+                        v-for="batch in catBlock.items"
+                        :key="batch.batchId"
+                        :id="'batch-target-' + batch.batchId"
+                        class="mb-2.5 bg-white rounded-xl shadow-sm border overflow-hidden"
                     >
+                        <!-- 標題列：系列名稱 + 進度 + 刪除鍵 -->
                         <div
-                            v-for="b in batches"
-                            :key="b.batchId"
-                            class="flex items-center justify-between gap-4 py-2 border-b border-gray-50 last:border-0"
+                            class="p-4 flex justify-between items-center cursor-pointer"
+                            @click="toggleSeries(batch.batchId)"
                         >
-                            <div
-                                @click="currentMember = b.memberName"
-                                class="text-[11px] font-bold min-w-[70px] cursor-pointer"
-                            >
-                                {{ b.memberName }}
+                            <!-- 左側：系列名稱 -->
+                            <div class="font-bold text-xs text-gray-700">
+                                {{ batch.seriesName }}
                                 <span
-                                    v-if="b.totalSets > 1"
+                                    v-if="batch.totalSets > 1"
                                     class="group-tag"
                                 >
-                                    SET {{ b.groupIndex }}
+                                    SET {{ batch.groupIndex }}
                                 </span>
                             </div>
 
-                            <div class="series-photo-grid">
-                                <div
-                                    v-for="item in b.items"
-                                    :key="item.id"
-                                    @click="toggleItem(item.id)"
-                                    class="item-slot border cursor-pointer"
-                                    :class="ownedIds.has(item.id)
-                                            ? 'bg-pink-500 border-pink-500 text-white'
-                                            : 'bg-white text-gray-200'"
+                            <!-- 右側：進度 + 刪除 -->
+                            <div class="flex items-center gap-2">
+                                <!-- 進度：1/4 或 Complete（不需展開） -->
+                                <span
+                                    class="text-[9px] font-black"
+                                    :class="getProgress(batch.items).count===4 ? 'text-green-500' : 'text-pink-400'"
+                                    @click.stop
                                 >
-                                    {{item.type}}
-                                </div>
-                            </div>
+                                    {{ getProgress(batch.items).count===4 ? 'Complete' : getProgress(batch.items).count + '/4' }}
+                                </span>
 
-                            <div
-                                class="text-[9px] font-black"
-                                :class="getProgress(b.items).count===4
-                                        ? 'text-green-500'
-                                        : 'text-pink-400'"
-                            >
-                                {{ getProgress(b.items).count===4 ? 'Complete' : getProgress(b.items).count+'/4' }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 成員詳細頁 -->
-    <div v-if="currentMember">
-        <div class="flex items-center justify-between mb-6 px-1">
-            <div class="flex items-center gap-2">
-                <button
-                    @click="currentMember = null"
-                    class="text-gray-300 font-bold text-2xl px-2"
-                >
-                    ‹
-                </button>
-                <div class="relative">
-                    <select
-                        v-model="currentMember"
-                        class="appearance-none bg-transparent font-black text-2xl outline-none pr-8 cursor-pointer"
-                    >
-                        <optgroup
-                            v-for="(names, gen) in presetMembers"
-                            :key="gen"
-                            :label="gen"
-                        >
-                            <option
-                                v-for="name in getActiveMembersInGen(gen)"
-                                :key="gen + '-' + name"
-                                :value="name"
-                            >
-                                {{ name }}
-                            </option>
-                        </optgroup>
-                    </select>
-                    <div
-                        class="pointer-events-none absolute inset-y-0 right-0 flex items-center text-pink-500"
-                    >
-                        ▼
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div
-            v-for="catBlock in memberItemsGrouped"
-            :key="catBlock.category"
-            class="mb-8"
-        >
-            <!-- 可收合的大分類（成員模式） -->
-            <h2
-                class="section-header flex items-center justify-between pr-4 cursor-pointer"
-                @click="toggleMemberCategory(catBlock.category)"
-            >
-                <span>{{ catBlock.category }}</span>
-                <span class="text-[10px] text-slate-400">
-                    {{ memberCollapsedCategories.has(catBlock.category) ? '＋ 展開' : '－ 收合' }}
-                </span>
-            </h2>
-
-            <div v-if="!memberCollapsedCategories.has(catBlock.category)">
-                <div
-                    v-for="batch in catBlock.items"
-                    :key="batch.batchId"
-                    :id="'batch-target-' + batch.batchId"
-                    class="mb-2.5 bg-white rounded-xl shadow-sm border overflow-hidden"
-                >
-                    <!-- 標題列：系列名稱 + 進度 + 刪除鍵 -->
-                    <div
-                        class="p-4 flex justify-between items-center cursor-pointer"
-                        @click="toggleSeries(batch.batchId)"
-                    >
-                        <!-- 左側：系列名稱 -->
-                        <div class="font-bold text-xs text-gray-700">
-                            {{ batch.seriesName }}
-                            <span
-                                v-if="batch.totalSets > 1"
-                                class="group-tag"
-                            >
-                                SET {{ batch.groupIndex }}
-                            </span>
-                        </div>
-
-                        <!-- 右側：進度 + 刪除 -->
-                        <div class="flex items-center gap-2">
-                            <!-- 進度：1/4 或 Complete（不需展開） -->
-                            <span
-                                class="text-[9px] font-black"
-                                :class="getProgress(batch.items).count===4 ? 'text-green-500' : 'text-pink-400'"
-                                @click.stop
-                            >
-                                {{ getProgress(batch.items).count===4 ? 'Complete' : getProgress(batch.items).count + '/4' }}
-                            </span>
-
-                            <!-- 刪除鍵 -->
-                            <button
-                                @click.stop="removeSeries(batch.batchId)"
-                                class="text-red-200"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 展開後內容 -->
-                    <div
-                        v-if="expandedSeries.has(batch.batchId)"
-                        class="p-4 border-t bg-slate-50/20"
-                    >
-                        <div
-                            class="mb-4 relative aspect-video bg-slate-100 rounded-xl overflow-hidden group"
-                        >
-                            <template v-if="seriesImages[batch.batchId]">
-                                <img
-                                    :src="seriesImages[batch.batchId]"
-                                    @click="zoomedImg = seriesImages[batch.batchId]"
-                                    class="w-full h-full object-contain cursor-zoom-in"
-                                />
+                                <!-- 刪除鍵 -->
                                 <button
-                                    @click.stop="removeImage(batch.batchId)"
-                                    class="absolute top-2 right-2 bg-red-500/80 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px]"
+                                    @click.stop="removeSeries(batch.batchId)"
+                                    class="text-red-200"
                                 >
                                     ✕
                                 </button>
-                            </template>
-                            <label
-                                v-else
-                                class="w-full h-full flex items-center justify-center cursor-pointer text-[10px] text-slate-400"
-                            >
-                                + 上傳圖片
-                                <input
-                                    type="file"
-                                    class="hidden"
-                                    @change="(e) => handleSeriesImageUpload(e, batch.batchId)"
-                                    accept="image/*"
-                                />
-                            </label>
-                        </div>
-
-                        <div class="photo-grid">
-                            <div
-                                v-for="item in batch.items"
-                                :key="item.id"
-                                @click="toggleItem(item.id)"
-                                class="item-slot border-2 cursor-pointer"
-                                :class="ownedIds.has(item.id)
-                                        ? 'border-pink-500 bg-pink-500 text-white'
-                                        : 'border-gray-100 bg-white text-gray-300'"
-                            >
-                                {{ item.type }}
                             </div>
                         </div>
-                        <!-- 展開區塊裡就不用再顯示進度，避免重複 -->
+
+                        <!-- 展開後內容 -->
+                        <div
+                            v-if="expandedSeries.has(batch.batchId)"
+                            class="p-4 border-t bg-slate-50/20"
+                        >
+                            <div
+                                class="mb-4 relative aspect-video bg-slate-100 rounded-xl overflow-hidden group"
+                            >
+                                <template v-if="seriesImages[batch.batchId]">
+                                    <img
+                                        :src="seriesImages[batch.batchId]"
+                                        @click="zoomedImg = seriesImages[batch.batchId]"
+                                        class="w-full h-full object-contain cursor-zoom-in"
+                                    />
+                                    <button
+                                        @click.stop="removeImage(batch.batchId)"
+                                        class="absolute top-2 right-2 bg-red-500/80 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px]"
+                                    >
+                                        ✕
+                                    </button>
+                                </template>
+                                <label
+                                    v-else
+                                    class="w-full h-full flex items-center justify-center cursor-pointer text-[10px] text-slate-400"
+                                >
+                                    + 上傳圖片
+                                    <input
+                                        type="file"
+                                        class="hidden"
+                                        @change="(e) => handleSeriesImageUpload(e, batch.batchId)"
+                                        accept="image/*"
+                                    />
+                                </label>
+                            </div>
+
+                            <div class="photo-grid">
+                                <div
+                                    v-for="item in batch.items"
+                                    :key="item.id"
+                                    @click="toggleItem(item.id)"
+                                    class="item-slot border-2 cursor-pointer"
+                                    :class="ownedIds.has(item.id)
+                                            ? 'border-pink-500 bg-pink-500 text-white'
+                                            : 'border-gray-100 bg-white text-gray-300'"
+                                >
+                                    {{ item.type }}
+                                </div>
+                            </div>
+                            <!-- 展開區塊裡就不用再顯示進度 -->
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</main>
+    </main>
 
-<!-- 圖片放大 -->
-<div
-    v-if="zoomedImg"
-    @click="zoomedImg = null"
-    class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-2"
->
-    <img :src="zoomedImg" class="max-w-full max-h-full object-contain" />
-</div>
+    <!-- 圖片放大 -->
+    <div
+        v-if="zoomedImg"
+        @click="zoomedImg = null"
+        class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-2"
+    >
+        <img :src="zoomedImg" class="max-w-full max-h-full object-contain" />
+    </div>
 </div>
 
 <!-- APP SCRIPT -->
@@ -860,61 +860,63 @@
             },
             async mounted() {
                 try {
-                    const [r, o, s] = await Promise.all([
+                    // 先嘗試從 IndexedDB 讀取
+                    let [r, o, s] = await Promise.all([
                         get("raw_items"),
                         get("owned_photos"),
                         get("series_images"),
                     ]);
-                    // 如果 IndexedDB 是空的，改從 localStorage 備份嘗試還原
-        if (!r) {
-            const backup = localStorage.getItem("sakura_txt");
-            if (backup) {
-                try {
-                    const parsed = JSON.parse(backup);
-                    if (parsed && Array.isArray(parsed.rawItems)) {
-                        r = parsed.rawItems;
+
+                    // 如果 IndexedDB 沒有 raw_items，改從 localStorage 備份還原
+                    if (!r) {
+                        const backup = localStorage.getItem("sakura_txt");
+                        if (backup) {
+                            try {
+                                const parsed = JSON.parse(backup);
+                                if (parsed && Array.isArray(parsed.rawItems)) {
+                                    r = parsed.rawItems;
+                                }
+                                if (parsed && Array.isArray(parsed.ownedIds)) {
+                                    o = parsed.ownedIds;
+                                }
+                            } catch (e) {
+                                console.error("解析 localStorage 備份失敗：", e);
+                            }
+                        }
                     }
-                    if (parsed && Array.isArray(parsed.ownedIds)) {
-                        o = parsed.ownedIds;
+
+                    if (r && Array.isArray(r)) {
+                        this.rawItems = r;
+                    }
+                    if (o && Array.isArray(o)) {
+                        this.ownedIds = new Set(o);
+                    }
+                    if (s && typeof s === "object") {
+                        this.seriesImages = s || {};
                     }
                 } catch (e) {
-                    console.error("解析 localStorage 備份失敗：", e);
+                    console.error("載入資料錯誤：", e);
+                    // 如果 IndexedDB 整體出錯，再嘗試 localStorage 備援
+                    try {
+                        const backup = localStorage.getItem("sakura_txt");
+                        if (backup) {
+                            const parsed = JSON.parse(backup);
+                            if (parsed && Array.isArray(parsed.rawItems)) {
+                                this.rawItems = parsed.rawItems;
+                            }
+                            if (parsed && Array.isArray(parsed.ownedIds)) {
+                                this.ownedIds = new Set(parsed.ownedIds);
+                            }
+                        }
+                    } catch (e2) {
+                        console.error("備援載入（localStorage）也失敗：", e2);
+                    }
                 }
-            }
-        }
-
-        if (r && Array.isArray(r)) {
-            this.rawItems = r;
-        }
-        if (o && Array.isArray(o)) {
-            this.ownedIds = new Set(o);
-        }
-        if (s && typeof s === "object") {
-            this.seriesImages = s || {};
-        }
-    } catch (e) {
-        console.error("載入資料錯誤：", e);
-
-        // 如果整個 IndexedDB 流程出錯，再嘗試一次 localStorage 備份
-        try {
-            const backup = localStorage.getItem("sakura_txt");
-            if (backup) {
-                const parsed = JSON.parse(backup);
-                if (parsed && Array.isArray(parsed.rawItems)) {
-                    this.rawItems = parsed.rawItems;
-                }
-                if (parsed && Array.isArray(parsed.ownedIds)) {
-                    this.ownedIds = new Set(parsed.ownedIds);
-                }
-            }
-        } catch (e2) {
-            console.error("備援載入（localStorage）也失敗：", e2);
-        }
-    }
-},
+            },
             methods: {
                 async saveData() {
                     try {
+                        // localStorage 簡易備份
                         localStorage.setItem(
                             "sakura_txt",
                             JSON.stringify({
@@ -922,6 +924,7 @@
                                 ownedIds: [...this.ownedIds],
                             })
                         );
+                        // IndexedDB 完整資料
                         await Promise.all([
                             set("raw_items", this.rawItems),
                             set("owned_photos", [...this.ownedIds]),
