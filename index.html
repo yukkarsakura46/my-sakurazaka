@@ -656,116 +656,119 @@
 
         // --- 簡單的 IndexedDB key-value 封裝 ---
         function createStorage() {
-            if (!("indexedDB" in window)) {
-                console.warn(
-                    "此裝置不支援 IndexedDB，將使用 localStorage，圖片容量可能較小。"
-                );
-                const PREFIX = "sakura_kv_";
-                return {
-                    async get(key) {
-                        try {
-                            const raw = localStorage.getItem(PREFIX + key);
-                            return raw ? JSON.parse(raw) : null;
-                        } catch (e) {
-                            console.error("localStorage get 錯誤：", e);
-                            return null;
-                        }
-                    },
-                    async set(key, value) {
-                      const db = await openDB();
-
-                      // ✅ 先把 Vue 的 Proxy 轉成一般 JSON 資料
-                      let cleanValue;
-                        try {
-                          // 優先用 structuredClone（新瀏覽器有）
-                          if (typeof structuredClone === "function") {
-                            cleanValue = structuredClone(value);
-                          } else {
-                            // 舊瀏覽器就用 JSON 方式深拷貝
-                            cleanValue = JSON.parse(JSON.stringify(value));
-                          }
-                        } catch (e) {
-                            console.error("準備寫入 IndexedDB 時序列化失敗：", e);
-                            // 如果這裡就掛了，直接拒絕，不要寫入
-                            throw e;
-                        }
-
-                        return new Promise((resolve, reject) => {
-                          const tx = db.transaction(STORE_NAME, "readwrite");
-                          const store = tx.objectStore(STORE_NAME);
-                          const req = store.put(cleanValue, key);
-                          req.onsuccess = () => resolve();
-                          req.onerror = () => reject(req.error);
-                        });
-                    },
-                    async clear() {
-                        try {
-                            Object.keys(localStorage).forEach((k) => {
-                                if (k.startsWith(PREFIX))
-                                    localStorage.removeItem(k);
-                            });
-                        } catch (e) {
-                            console.error("localStorage clear 錯誤：", e);
-                        }
-                    },
-                };
-            }
-
-            const DB_NAME = "sakura_collection_db";
-            const STORE_NAME = "kv";
-
-            function openDB() {
-                return new Promise((resolve, reject) => {
-                    const req = indexedDB.open(DB_NAME, 1);
-                    req.onupgradeneeded = (event) => {
-                        const db = event.target.result;
-                        if (!db.objectStoreNames.contains(STORE_NAME)) {
-                            db.createObjectStore(STORE_NAME);
-                        }
-                    };
-                    req.onsuccess = () => resolve(req.result);
-                    req.onerror = () => reject(req.error);
-                });
-            }
-
-            async function get(key) {
-                const db = await openDB();
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(STORE_NAME, "readonly");
-                    const store = tx.objectStore(STORE_NAME);
-                    const req = store.get(key);
-                    req.onsuccess = () => resolve(req.result ?? null);
-                    req.onerror = () => reject(req.error);
-                });
-            }
-
-            async function set(key, value) {
-                const db = await openDB();
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(STORE_NAME, "readwrite");
-                    const store = tx.objectStore(STORE_NAME);
-                    const req = store.put(value, key);
-                    req.onsuccess = () => resolve();
-                    req.onerror = () => reject(req.error);
-                });
-            }
-
-            async function clear() {
-                const db = await openDB();
-                return new Promise((resolve, reject) => {
-                    const tx = db.transaction(STORE_NAME, "readwrite");
-                    const store = tx.objectStore(STORE_NAME);
-                    const req = store.clear();
-                    req.onsuccess = () => resolve();
-                    req.onerror = () => reject(req.error);
-                });
-            }
-
-            console.log("使用 IndexedDB 儲存資料。");
-            return { get, set, clear };
+  if (!("indexedDB" in window)) {
+    console.warn(
+      "此裝置不支援 IndexedDB，將使用 localStorage，圖片容量可能較小。"
+    );
+    const PREFIX = "sakura_kv_";
+    return {
+      async get(key) {
+        try {
+          const raw = localStorage.getItem(PREFIX + key);
+          return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+          console.error("localStorage get 錯誤：", e);
+          return null;
         }
+      },
+      async set(key, value) {
+        try {
+          localStorage.setItem(PREFIX + key, JSON.stringify(value));
+        } catch (e) {
+          console.error("localStorage set 錯誤：", e);
+        }
+      },
+      async clear() {
+        try {
+          Object.keys(localStorage).forEach((k) => {
+            if (k.startsWith(PREFIX)) {
+              localStorage.removeItem(k);
+            }
+          });
+        } catch (e) {
+          console.error("localStorage clear 錯誤：", e);
+        }
+      },
+    };
+  }
 
-        const { get, set, clear } = createStorage();
+  const DB_NAME = "sakura_collection_db";
+  const STORE_NAME = "kv";
+
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(STORE_NAME);
+        }
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  console.log("使用 IndexedDB 儲存資料。");
+
+  return {
+    async get(key) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(key);
+        req.onsuccess = () => {
+          const raw = req.result;
+          if (typeof raw === "string") {
+            // 我們自己存進去的 JSON 字串
+            try {
+              resolve(JSON.parse(raw));
+            } catch (e) {
+              console.error("解析 IndexedDB JSON 失敗：", e);
+              resolve(null);
+            }
+          } else {
+            // 如果是舊版直接存物件的資料，就先照原樣回傳（之後清掉即可）
+            resolve(raw ?? null);
+          }
+        };
+        req.onerror = () => reject(req.error);
+      });
+    },
+
+    async set(key, value) {
+      const db = await openDB();
+      let payload;
+      try {
+        // 一律轉成 JSON 字串存
+        payload = JSON.stringify(value);
+      } catch (e) {
+        console.error("準備寫入 IndexedDB 時 JSON 序列化失敗：", e);
+        throw e;
+      }
+
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.put(payload, key); // ✅ 永遠是 string，不會再 DataCloneError
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    },
+
+    async clear() {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.clear();
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    },
+  };
+}
 
         // --- Vue App ---
         createApp({
