@@ -426,46 +426,48 @@
                             class="p-3 border-t bg-slate-50/50 space-y-3"
                         >
                             <div
-                                v-for="b in batches"
-                                :key="b.batchId"
-                                class="flex items-center justify-between gap-4 py-2 border-b border-gray-50 last:border-0"
-                            >
-                                <div
-                                    @click="currentMember = b.memberName"
-                                    class="text-[11px] font-bold min-w-[70px] cursor-pointer"
-                                >
-                                    {{ b.memberName }}
-                                    <span
-                                        v-if="b.totalSets > 1"
-                                        class="group-tag"
-                                    >
-                                        SET {{ b.groupIndex }}
-                                    </span>
-                                </div>
+  v-for="b in batches"
+  :key="b.batchId"
+  class="flex items-center gap-4 py-2 border-b border-gray-50 last:border-0"
+>
+  <!-- 左：成員名稱 + SET（給固定寬度，避免撐到中間） -->
+  <div
+    @click="currentMember = b.memberName"
+    class="text-[11px] font-bold min-w-[80px] max-w-[80px] cursor-pointer flex items-center"
+  >
+    <span class="truncate">{{ b.memberName }}</span>
+    <span
+      v-if="b.totalSets > 1"
+      class="group-tag ml-1 shrink-0"
+    >
+      SET {{ b.groupIndex }}
+    </span>
+  </div>
 
-                                <div class="series-photo-grid">
-                                    <div
-                                        v-for="item in b.items"
-                                        :key="item.id"
-                                        @click="toggleItem(item.id)"
-                                        class="item-slot border cursor-pointer"
-                                        :class="ownedIds.has(item.id)
-                                                ? 'bg-pink-500 border-pink-500 text-white'
-                                                : 'bg-white text-gray-200'"
-                                    >
-                                        {{item.type}}
-                                    </div>
-                                </div>
+  <!-- 中：4 個格子（固定寬度，所有列都一樣寬） -->
+  <div class="series-photo-grid w-[160px] shrink-0">
+    <div
+      v-for="item in b.items"
+      :key="item.id"
+      @click="toggleItem(item.id)"
+      class="item-slot border cursor-pointer"
+      :class="ownedIds.has(item.id)
+              ? 'bg-pink-500 border-pink-500 text-white'
+              : 'bg-white text-gray-200'"
+    >
+      {{ item.type }}
+    </div>
+  </div>
 
-                                <div
-                                    class="text-[9px] font-black"
-                                    :class="getProgress(b.items).count===4
-                                            ? 'text-green-500'
-                                            : 'text-pink-400'"
-                                >
-                                    {{ getProgress(b.items).count===4 ? 'Complete' : getProgress(b.items).count+'/4' }}
-                                </div>
-                            </div>
+  <!-- 右：進度文字（固定寬度，不會擠到中間） -->
+  <div
+    class="text-[9px] font-black text-right w-[40px] shrink-0"
+    :class="getProgress(b.items).count===4 ? 'text-green-500' : 'text-pink-400'"
+  >
+    {{ getProgress(b.items).count===4 ? 'Complete' : getProgress(b.items).count + '/4' }}
+  </div>
+</div>
+
                         </div>
                     </div>
                 </div>
@@ -770,7 +772,6 @@
     },
   };
 }
-const { get, set, clear } = createStorage();
 
         // --- Vue App ---
         createApp({
