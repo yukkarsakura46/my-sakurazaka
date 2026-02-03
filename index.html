@@ -10,10 +10,11 @@
     <style>
         * { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif !important; text-transform: none !important; box-sizing: border-box; }
         [v-cloak] { display: none; }
+        .loading-screen { position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 9999; font-weight: bold; color: #f472b6; }
         .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; width: 100%; }
         .series-photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; width: 100%; max-width: 170px; }
         .item-slot { aspect-ratio: 2 / 1; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 10px; font-weight: 800; transition: all 0.2s; }
-        .expand-enter-active, .expand-leave-active { transition: all 0.25s ease-out; max-height: 5000px; overflow: hidden; }
+        .expand-enter-active, .expand-leave-active { transition: all 0.2s ease-out; max-height: 5000px; overflow: hidden; }
         .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
         .section-header { font-size: 11px; font-weight: 900; color: #64748b; margin: 20px 0 10px 4px; border-left: 3px solid #f472b6; padding-left: 8px; text-transform: uppercase; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; }
@@ -24,9 +25,11 @@
 </head>
 <body class="bg-slate-50 min-h-screen">
     <div id="app" v-cloak>
+        <div v-if="!isReady" class="loading-screen">🌸 載入中...</div>
+
         <nav class="bg-white shadow-sm p-4 sticky top-0 z-30 flex justify-between items-center border-b border-gray-100">
             <h1 class="text-xl font-black text-gray-800 cursor-pointer" @click="currentMember = null; viewMode = 'member'">🌸 櫻坂46</h1>
-            <button @click="showInput = true" class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold shadow-lg">管理面板</button>
+            <button @click="showInput = true" class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold">管理面板</button>
         </nav>
 
         <div v-if="showInput" class="modal-overlay" @click.self="showInput = false">
@@ -41,15 +44,15 @@
 
                 <div class="space-y-3 text-xs text-gray-700">
                     <template v-if="addMode === 'member'">
-                        <select v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold text-gray-700"><option value="">-- 1. 選擇期別 --</option><option v-for="(ms, g) in presetMembers" :key="g" :value="g">{{g}}</option></select>
-                        <select v-if="selectedGen" v-model="newItem.name" class="w-full border p-2.5 rounded-xl bg-white font-bold text-gray-700"><option value="">-- 2. 選擇成員 --</option><option v-for="n in presetMembers[selectedGen]" :key="n" :value="n">{{n}}</option></select>
+                        <select v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold"><option value="">-- 1. 選擇期別 --</option><option v-for="(ms, g) in presetMembers" :key="g" :value="g">{{g}}</option></select>
+                        <select v-if="selectedGen" v-model="newItem.name" class="w-full border p-2.5 rounded-xl bg-white font-bold"><option value="">-- 2. 選擇成員 --</option><option v-for="n in presetMembers[selectedGen]" :key="n" :value="n">{{n}}</option></select>
                         <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 3. 選擇分類 --</option><option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{cat}}</option><option value="custom_cat">＋ 自定義分類</option></select>
                         <select v-if="selectedCategory" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 4. 選擇具體系列 --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{s}}</option><option value="custom_series">＋ 手動輸入系列名稱</option></select>
                     </template>
                     <template v-else>
-                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white text-gray-700"><option value="">-- 1. 選擇分類 --</option><option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{cat}}</option></select>
-                        <select v-if="selectedCategory" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white text-gray-700"><option value="">-- 2. 選擇系列 --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{s}}</option></select>
-                        <select v-if="selectedPreset" v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold text-gray-700"><option value="">-- 3. 選擇成員期別 --</option><option v-for="(members, gen) in presetMembers" :key="gen" :value="gen">{{gen}}</option></select>
+                        <select v-model="selectedCategory" @change="onCategorySelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 1. 選擇分類 --</option><option v-for="(list, cat) in categorizedSeries" :key="cat" :value="cat">{{cat}}</option></select>
+                        <select v-if="selectedCategory" v-model="selectedPreset" @change="onSeriesSelect" class="w-full border p-2.5 rounded-xl bg-white"><option value="">-- 2. 選擇系列 --</option><option v-for="s in categorizedSeries[selectedCategory]" :key="s" :value="s">{{s}}</option></select>
+                        <select v-if="selectedPreset" v-model="selectedGen" class="w-full border p-2.5 rounded-xl bg-white font-bold"><option value="">-- 3. 選擇期別 --</option><option v-for="(ms, g) in presetMembers" :key="g" :value="g">{{g}}</option></select>
                         <div v-if="selectedGen && selectedPreset" class="border rounded-xl p-3 bg-slate-50 max-h-40 overflow-y-auto">
                             <div v-for="name in presetMembers[selectedGen]" :key="name" class="flex items-center mb-2"><input type="checkbox" :id="'bat-'+name" :value="name" v-model="batchMemberNames" class="mr-2 accent-pink-500"><label :for="'bat-'+name" class="font-bold">{{name}}</label></div>
                         </div>
@@ -59,8 +62,8 @@
                     <button @click="addBatchItems" class="w-full bg-pink-500 text-white p-3 rounded-xl font-bold shadow-lg mt-2">確認新增並跳轉</button>
                 </div>
                 <div class="flex justify-between mt-6 border-t pt-4 gap-2">
-                    <button @click="exportData" class="text-blue-500 font-bold text-xs">備份</button>
-                    <button @click="clearAll" class="text-red-300 font-bold text-xs px-2">清空</button>
+                    <button @click="exportData" class="text-blue-500 font-bold text-xs">備份全部</button>
+                    <button @click="clearAll" class="text-red-300 font-bold text-xs px-2">清空資料</button>
                 </div>
             </div>
         </div>
@@ -69,21 +72,22 @@
             <div v-if="!currentMember" class="flex justify-center items-center gap-4 my-4">
                 <button @click="viewMode = 'member'" class="tab-btn" :class="viewMode === 'member' ? 'tab-active' : 'tab-inactive'">成員模式</button>
                 <button @click="viewMode = 'series'" class="tab-btn" :class="viewMode === 'series' ? 'tab-active' : 'tab-inactive'">系列模式</button>
+                <button v-if="viewMode === 'series'" @click="toggleAllSeriesMode" class="text-[9px] bg-slate-200 text-slate-500 px-2 py-1.5 rounded-lg font-black">{{ allExpandedSeries ? '收合' : '展開' }}</button>
             </div>
 
             <div v-if="!currentMember && viewMode === 'member'">
                 <div v-for="(members, gen) in presetMembers" :key="gen" class="mb-6">
-                    <div v-if="getGenActiveCount(gen) > 0">
+                    <div v-if="getActiveMembersInGen(gen).length > 0">
                         <h2 class="section-header">{{ gen }}</h2>
                         <div class="grid grid-cols-2 gap-3">
                             <div v-for="name in getActiveMembersInGen(gen)" :key="name" @click="currentMember = name" class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition text-center">
                                 <div class="font-black text-gray-700 text-base">{{ name }}</div>
-                                <div class="text-[8px] font-bold mt-1 text-pink-400 tracking-tight">{{ getMemberOwnedCount(name) }} Collected</div>
+                                <div class="text-[8px] font-bold mt-1 text-pink-400">{{ getMemberOwnedCount(name) }} Collected</div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div v-if="!memberList.length" class="text-center py-24 text-slate-300 font-bold italic">🌸 點擊管理面板開始記錄</div>
+                <div v-if="memberList.length === 0" class="text-center py-24 text-slate-300 font-bold italic">🌸 點擊管理面板開始記錄</div>
             </div>
 
             <div v-if="!currentMember && viewMode === 'series'">
@@ -91,13 +95,13 @@
                     <h2 class="section-header">{{ catName }}</h2>
                     <div v-for="(batches, seriesName) in seriesObj" :key="seriesName" :id="'series-target-' + seriesName" class="mb-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <div @click="toggleSeriesMode(catName, seriesName)" class="px-4 py-3 flex justify-between items-center cursor-pointer active:bg-gray-50">
-                            <div class="flex items-center overflow-hidden"><span class="text-[8px] mr-3 text-pink-400 transition-transform duration-200" :class="{'rotate-90': expandedSeriesMode.has(catName + seriesName)}">▶</span><h3 class="text-[10px] font-black text-gray-600 truncate mr-2">{{ seriesName }}</h3></div>
-                            <div class="bg-gray-50 px-2 py-0.5 rounded text-[9px] font-bold text-pink-400 shrink-0">{{ getUniqueMemberCount(batches) }} Member(s)</div>
+                            <div class="flex items-center overflow-hidden"><span class="text-[8px] mr-3 text-pink-400 transition-transform" :class="{'rotate-90': expandedSeriesMode.has(catName + seriesName)}">▶</span><h3 class="text-[10px] font-black text-gray-600 truncate">{{ seriesName }}</h3></div>
+                            <div class="bg-gray-50 px-2 py-0.5 rounded text-[9px] font-bold text-pink-400">{{ getUniqueMemberCount(batches) }} Member(s)</div>
                         </div>
-                        <transition name="expand"><div v-if="expandedSeriesMode.has(catName + seriesName)" class="border-t p-3 bg-white/50">
+                        <transition name="expand"><div v-if="expandedSeriesMode.has(catName + seriesName)" class="border-t p-3 bg-white/50 space-y-3">
                             <div v-for="batch in batches" :key="batch.batchId" class="flex items-center justify-between gap-4 py-2 border-b border-gray-50 last:border-0">
                                 <div @click="currentMember = batch.memberName" class="text-[11px] font-bold min-w-[70px] cursor-pointer">{{ batch.memberName }}<span v-if="batch.totalSets > 1" class="group-tag">SET {{ batch.groupIndex }}</span></div>
-                                <div class="series-photo-grid"><div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border" :class="ownedIds.has(item.id) ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white text-gray-200'">{{ item.type }}</div></div>
+                                <div class="series-photo-grid"><div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border" :class="ownedIds.has(item.id) ? 'bg-pink-500 border-pink-500 text-white shadow-sm' : 'bg-white border-gray-100 text-gray-200'" style="font-size: 8px;">{{ item.type }}</div></div>
                                 <div class="text-[9px] font-black min-w-[50px] text-right" :class="getProgress(batch.items).count === 4 ? 'text-green-500' : 'text-pink-400'">{{ getProgress(batch.items).count === 4 ? 'Complete' : getProgress(batch.items).count+'/4' }}</div>
                             </div>
                         </div></transition>
@@ -108,15 +112,10 @@
             <div v-if="currentMember">
                 <div class="flex items-center justify-between mb-6 px-1">
                     <div class="flex items-center gap-2">
-                        <button @click="currentMember = null" class="text-gray-300 font-bold text-2xl leading-none px-2">‹</button>
-                        <div class="relative">
-                            <select v-model="currentMember" class="appearance-none bg-transparent font-black text-2xl outline-none pr-8 cursor-pointer">
-                                <optgroup v-for="(names, gen) in presetMembers" :label="gen"><option v-for="name in getActiveMembersInGen(gen)" :value="name">{{ name }}</option></optgroup>
-                            </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center text-pink-500">▼</div>
-                        </div>
+                        <button @click="currentMember = null" class="text-gray-300 font-bold text-2xl px-2">‹</button>
+                        <div class="relative"><select v-model="currentMember" class="appearance-none bg-transparent font-black text-2xl outline-none pr-8 cursor-pointer"><optgroup v-for="(names, gen) in presetMembers" :label="gen"><option v-for="name in getActiveMembersInGen(gen)" :value="name">{{ name }}</option></optgroup></select><div class="pointer-events-none absolute inset-y-0 right-0 flex items-center text-pink-500">▼</div></div>
                     </div>
-                    <button @click="toggleAll" class="text-[9px] bg-pink-50 text-pink-500 px-3 py-1.5 rounded-lg font-black uppercase tracking-tighter shadow-sm">展開/收合</button>
+                    <button @click="toggleAll" class="text-[9px] bg-pink-50 text-pink-500 px-3 py-1.5 rounded-lg font-black">展開/收合</button>
                 </div>
 
                 <div v-for="catBlock in memberItemsGrouped" :key="catBlock.category" class="mb-8">
@@ -131,7 +130,7 @@
                         </div>
                         <transition name="expand"><div v-if="expandedSeries.has(batch.batchId)" class="p-4 border-t bg-slate-50/20">
                             <div class="mb-4 relative aspect-video bg-slate-100 rounded-xl overflow-hidden group">
-                                <template v-if="seriesImages[batch.batchId]"><img :src="seriesImages[batch.batchId]" @click="zoomedImg = seriesImages[batch.batchId]" class="w-full h-full object-contain"><button @click.stop="removeImage(batch.batchId)" class="absolute top-2 right-2 bg-red-500/80 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow-lg">✕</button></template>
+                                <template v-if="seriesImages[batch.batchId]"><img :src="seriesImages[batch.batchId]" @click="zoomedImg = seriesImages[batch.batchId]" class="w-full h-full object-contain"><button @click.stop="removeImage(batch.batchId)" class="absolute top-2 right-2 bg-red-500/80 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">✕</button></template>
                                 <label v-else class="w-full h-full flex items-center justify-center cursor-pointer text-[10px] text-slate-400">+ 上傳圖片<input type="file" class="hidden" @change="(e) => handleSeriesImageUpload(e, batch.batchId)" accept="image/*"></label>
                             </div>
                             <div class="photo-grid"><div v-for="item in batch.items" :key="item.id" @click="toggleItem(item.id)" class="item-slot border-2" :class="ownedIds.has(item.id) ? 'border-pink-500 bg-pink-500 text-white shadow-md' : 'border-gray-100 bg-white text-gray-300'">{{ item.type }}</div></div>
@@ -150,7 +149,7 @@
         createApp({
             data() {
                 return {
-                    viewMode: 'member', addMode: 'member', showInput: false, currentMember: null, selectedGen: '', selectedCategory: '', selectedPreset: '', batchMemberNames: [],
+                    isReady: false, viewMode: 'member', addMode: 'member', showInput: false, currentMember: null, selectedGen: '', selectedCategory: '', selectedPreset: '', batchMemberNames: [],
                     presetMembers: {"二期生": ["遠藤光莉", "大園玲", "大沼晶保", "幸阪茉里乃", "武元唯衣", "田村保乃", "藤吉夏鈴", "増本綺良", "松田里奈", "森田ひかる", "守屋麗奈", "山﨑天"], "三期生": ["石森璃花", "遠藤理子", "小田倉麗奈", "小島凪紗", "谷口愛季", "中嶋優月", "的野美青", "向井純葉", "村井優", "村山美羽", "山下瞳月"], "四期生": ["浅井恋乃未", "稲熊ひな", "勝又春", "佐藤愛桜", "中川智尋", "松本和子", "目黒陽色", "山川宇衣", "山田桃実"], "畢業生": ["松平璃子", "守屋茜", "渡邉梨加", "渡邉理佐", "原田葵", "尾関梨香", "菅井友香", "関有美子", "土生瑞穂", "小林由依", "齋藤冬優花", "上村莉菜", "小池美波", "井上梨名"]},
                     categorizedSeries: {"封入": ["1st Single「Nobody's fault」封入", "2nd Single「BAN」封入", "3rd Single「流れ弾」封入", "4th Single「五月雨よ」封入", "1st Album「As you know?」封入", "5th Single「桜月」封入", "6th Single「Start over!」封入", "7th Single「承認欲求」封入", "8th Single「何歳の頃に戻りたいのか?」 封入", "9th Single「自業自得」封入", "10th Single「I want tomorrow to come」封入", "11th Single「UDAGAWA GENERATION」封入", "2nd Album「Addiction」封入", "12th Single「Make or Break」封入", "13th Single「Unhappy birthday構文」封入", "14th Single「The growing up train」封入"], "MV衣裝": ["「Nobody's fault」MVロケーション衣装", "「なぜ恋をして来なかったんだろう?」MVロケーション衣装", "「Buddies」MVロケーション衣装", "「BAN」MVロケーション衣装", "「偶然の答え」MVロケーション衣装", "「思ったよりも寂しくはない」MVロケーション衣装", "「流れ弾」MVロケーション衣装", "「Dead end」MVロケーション衣装", "「無言の宇宙」MVロケーション衣装", "「Dead end」MVロケーション衣装", "「流れ弾」MV黒衣装", "「五月雨よ」MVロケーション衣装", "「五月雨よ」MVパフォーマンス衣装", "「車間距離」MVロケーション衣装", "「僕のジレンマ」MVロケーション衣装", "「摩擦係数」MV衣装", "「桜月」MV衣装", "「桜月」MV青衣装", "「Cool」MV衣装", "「夏の近道」 MV衣装", "「夏の近道」 MV制服", "「BAN」 MV衣装", "「Start over!」MV衣装", "「ドローン旋回中」MV衣装", "「静寂の暴力」 MV衣装", "「Nobody's fault」MV衣装", "「承認欲求」MV衣装", "「マモリビト」 MV衣装", "「隙間風よ」MV衣装", "「何歳の頃に戻りたいのか?」MV衣装", "「何度 LOVE SONG の歌詞を読み返しただろう」 MV衣装", "「油を注せ!」 MV衣装", "「自業自得」MV衣装", "「愛し合いなさい」 MV衣装", "「引きこもる時間はない」 MV衣装", "「I want tomorrow to come」MV衣装", "「本質的なこと」 MV衣装", "「僕は僕を好きになれない」 MV衣装", "「UDAGAWA GENERATION」MV衣装", "「Nothing Special」MV衣装", "「Nightmare 症候群」MV衣装", "「Addiction」 MV衣装", "「Make or Break」 MV衣装", "「港区パセリ」 MV衣装", "「死んだふり」MV衣装", "「Unhappy birthday構文」MV衣装", "「木枯らしは泣かない」MV衣装", "「Alter ego」MV衣装", "「The growing up train」MV衣装"], "封面": ["流れ弾ジャケット写真衣装", "「Start over!」 ジャケット写真衣装", "「承認欲求」ジャケット写真衣装", "「何歳の頃に戻りたいのか?」ジャケット写真衣装", "「自業自得」ジャケット写真衣装", "「I want tomorrow to come」ジャケット写真衣装", "「UDAGAWA GENERATION」ジャケット写真衣装", "「Make or Break」ジャケット写真衣装", "「Unhappy birthday構文」ジャケット写真衣装", "「The growing up train」ジャケット写真衣装"], "LIVE衣裝": ["三期生ブックレット衣装", "「3rd TOUR 2023」オープニング衣装", "「3rd TOUR 2023」白スーツ衣装", "2023年夏フェス衣装", "「3rd Single BACKS LIVE!!」衣装", "「3rd TOUR 2023」ピンク衣装", "「3rd YEAR ANNIVERSARY LIVE」ライブ衣装", "「7th Single BACKS LIVE!!」オープニング衣装", "「小林由依 卒業コンサート」ライブ衣装", "「小林由依 卒業コンサート」赤衣装", "「3rd TOUR 2023」ライブ衣装", "2023年 年末歌唱衣装", "「8th Single BACKS LIVE!!」ライブ衣装", "「4th ARENA TOUR 2024」ライブ衣装", "「3rd YEAR ANNIVERSARY LIVE」ライブ衣装", "「4th ARENA TOUR IN 東京ドーム」オープニング衣装", "「9th Single BACKS LIVE!!」オープニング衣装", "2023年 年末衣装", "2024年夏フェス衣装", "「4th ARENA TOUR」オープニング衣装", "「4th YEAR ANNIVERSARY LIVE」ライブ衣装", "「4th ARENA TOUR」ライブ衣装", "「三期生ライブ」オープニング衣装", "「4th ARENA TOUR IN 東京ドーム」ライブ衣装", "「10th Single BACKS LIVE!!」ライブ衣装", "「5th TOUR 2025 “Addiction”」ライブ衣装", "「三期生ライブ」衣装", "「12th Single BACKS LIVE!!」ライブ衣装", "「5th TOUR 2025 “Addiction”」黑衣装", "「12th Single BACKS LIVE!!」黑衣装"], "其他": ["2023年 冬私服コーデ", "スーツコーデ", "カラーコーデ", "サマーワンピース", "デニムコーデ", "2023年 ハロウィン衣装", "2023年 クリスマスサンタ衣装", "2023年 読書コーデ", "2024年 振袖衣装", "おうちコーデ", "ジャンプスーツ", "2024年 春私服コーデ", "カラーデニム", "2024年浴衣", "麥わら帽子コーデ", "Tシャツコーデ", "ワイシャツコーデ", "2024年 ハロウィン衣装", "カラーニットコーデ", "2024年 クリスマスサンタ衣装", "どうぶつ着ぐるみ", "マフラーコーデ", "2025年振袖", "いぬみみコーデ", "モードコーデ", "冬私服コーデ", "ネクタイコーデ", "レザージャケットコーデ", "2025年浴衣", "ポロシャツコーデ", "クラシックコーデ", "チェックコーデ", "パイレーツ衣装", "冬服", "2025年 サンタ衣装", "スタイリング制服", "2026年 振袖", "ジャージ", "2026年 バレンタインコーデ"], "特殊": ["【会場予約特典】 東京ドーム限定成員生寫真", "東京ドーム完賣御禮紀念!! ライブ會場撮りおろしプレミアム生寫真", "福袋 2025 「4th ARENA TOUR IN 東京ドーム」 オープニング衣装", "福袋 2026 MV衣装"]},
                     newItem: { name: '', series: '', category: '' }, rawItems: [], ownedIds: new Set(), seriesImages: {}, expandedSeries: new Set(), expandedSeriesMode: new Set(), zoomedImg: null
@@ -160,49 +159,69 @@
                 memberList() { return [...new Set(this.rawItems.map(i => i.name))]; },
                 itemsBySeriesNormalized() {
                     const grouped = {};
-                    this.rawItems.forEach(item => {
-                        const cat = item.category || '其他'; const bId = item.batchId;
-                        if (!grouped[cat]) grouped[cat] = {}; if (!grouped[cat][item.series]) grouped[cat][item.series] = [];
-                        let batch = grouped[cat][item.series].find(b => b.batchId === bId);
-                        if (!batch) { batch = { batchId: bId, seriesName: item.series, memberName: item.name, items: [] }; grouped[cat][item.series].push(batch); }
-                        batch.items.push(item);
-                    });
+                    try {
+                        this.rawItems.forEach(item => {
+                            const cat = item.category || '其他'; const bId = item.batchId;
+                            if (!grouped[cat]) grouped[cat] = {}; if (!grouped[cat][item.series]) grouped[cat][item.series] = [];
+                            let batch = grouped[cat][item.series].find(b => b.batchId === bId);
+                            if (!batch) { batch = { batchId: bId, seriesName: item.series, memberName: item.name, items: [] }; grouped[cat][item.series].push(batch); }
+                            batch.items.push(item);
+                        });
+                        Object.keys(grouped).forEach(cat => {
+                            Object.keys(grouped[cat]).forEach(sName => {
+                                const counts = {}; grouped[cat][sName].forEach(b => { counts[b.memberName] = (counts[b.memberName] || 0) + 1; });
+                                const curIdx = {}; grouped[cat][sName].forEach(b => {
+                                    curIdx[b.memberName] = (curIdx[b.memberName] || 0) + 1;
+                                    b.groupIndex = curIdx[b.memberName]; b.totalSets = counts[b.memberName];
+                                });
+                            });
+                        });
+                    } catch(e) {}
                     return grouped;
                 },
                 memberItemsGrouped() {
-                    if (!this.currentMember) return [];
-                    const filtered = this.rawItems.filter(i => i.name === this.currentMember);
+                    if (!this.currentMember || !this.isReady) return [];
                     const groupedMap = {};
-                    filtered.forEach(item => {
-                        const cat = item.category || '其他';
-                        if (!groupedMap[cat]) groupedMap[cat] = { category: cat, items: [] };
-                        let batch = groupedMap[cat].items.find(b => b.batchId === item.batchId);
-                        if (!batch) { batch = { batchId: item.batchId, seriesName: item.series, items: [] }; groupedMap[cat].items.push(batch); }
-                        batch.items.push(item);
-                    });
-                    const finalArr = Object.values(groupedMap);
-                    finalArr.forEach(c => {
-                        const sCounts = {}; c.items.forEach(b => { sCounts[b.seriesName] = (sCounts[b.seriesName] || 0) + 1; });
-                        const curIdx = {}; c.items.forEach(b => {
-                            curIdx[b.seriesName] = (curIdx[b.seriesName] || 0) + 1;
-                            b.groupIndex = curIdx[b.seriesName]; b.totalSets = sCounts[b.seriesName];
+                    try {
+                        this.rawItems.filter(i => i.name === this.currentMember).forEach(item => {
+                            const cat = item.category || '其他';
+                            if (!groupedMap[cat]) groupedMap[cat] = { category: cat, items: [] };
+                            let batch = groupedMap[cat].items.find(b => b.batchId === item.batchId);
+                            if (!batch) { batch = { batchId: item.batchId, seriesName: item.series, items: [] }; groupedMap[cat].items.push(batch); }
+                            batch.items.push(item);
                         });
-                    });
-                    return finalArr;
+                        const finalArr = Object.values(groupedMap);
+                        finalArr.forEach(c => {
+                            const sCounts = {}; c.items.forEach(b => { sCounts[b.seriesName] = (sCounts[b.seriesName] || 0) + 1; });
+                            const curIdx = {}; c.items.forEach(b => {
+                                curIdx[b.seriesName] = (curIdx[b.seriesName] || 0) + 1;
+                                b.groupIndex = curIdx[b.seriesName]; b.totalSets = sCounts[b.seriesName];
+                            });
+                        });
+                        return finalArr;
+                    } catch(e) { return []; }
                 },
-                allExpanded() {
+                allExpanded() { 
                     const filtered = this.rawItems.filter(i => i.name === this.currentMember);
                     const ids = [...new Set(filtered.map(i => i.batchId))];
-                    return ids.length > 0 && this.expandedSeries.size === ids.length;
+                    return ids.length > 0 && this.expandedSeries.size === ids.length; 
+                },
+                allExpandedSeries() {
+                    let total = 0; Object.values(this.itemsBySeriesNormalized).forEach(cat => total += Object.keys(cat).length);
+                    return total > 0 && this.expandedSeriesMode.size === total;
                 }
             },
-            async mounted() { await this.initDB(); },
-            methods: {
-                async initDB() {
+            async mounted() {
+                try {
                     const r = await get('raw_items'); if(r) this.rawItems = r;
                     const o = await get('owned_photos'); if(o) this.ownedIds = new Set(o);
                     const s = await get('series_images'); if(s) this.seriesImages = s || {};
-                },
+                    this.isReady = true;
+                } catch(e) {
+                    this.isReady = true; // 即使讀取失敗也要顯示，避免卡死
+                }
+            },
+            methods: {
                 async saveData() {
                     await set('raw_items', JSON.parse(JSON.stringify(this.rawItems)));
                     await set('owned_photos', [...this.ownedIds]);
@@ -217,6 +236,7 @@
                 getGenActiveCount(gen) { return this.getActiveMembersInGen(gen).length; },
                 toggleSeries(id) { if (this.expandedSeries.has(id)) this.expandedSeries.delete(id); else this.expandedSeries.add(id); },
                 toggleSeriesMode(cat, sName) { const key = cat + sName; if (this.expandedSeriesMode.has(key)) this.expandedSeriesMode.delete(key); else this.expandedSeriesMode.add(key); },
+                toggleAllSeriesMode() { if (this.allExpandedSeries) this.expandedSeriesMode.clear(); else Object.keys(this.itemsBySeriesNormalized).forEach(cat => Object.keys(this.itemsBySeriesNormalized[cat]).forEach(s => this.expandedSeriesMode.add(cat + s))); },
                 toggleAll() { 
                     if (this.allExpanded) { this.expandedSeries.clear(); } 
                     else { const filtered = this.rawItems.filter(i => i.name === this.currentMember); [...new Set(filtered.map(i => i.batchId))].forEach(id => this.expandedSeries.add(id)); }
