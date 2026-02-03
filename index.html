@@ -220,9 +220,26 @@
                     </button>
                 </div>
 
-                <div class="flex justify-between mt-8 border-t pt-4">
-                    <button @click="exportData" class="text-blue-500 font-bold text-xs">備份資料</button>
-                    <button @click="clearAll" class="text-red-300 font-bold text-xs">清空</button>
+                <!-- 備份 / 還原 / 清空 -->
+                <div class="flex items-center justify-between mt-8 border-t pt-4">
+                    <div class="flex gap-3 items-center">
+                        <!-- 還原資料 -->
+                        <label class="text-emerald-500 font-bold text-xs cursor-pointer">
+                            還原資料
+                            <input
+                                type="file"
+                                class="hidden"
+                                accept=".txt,.json,application/json,text/plain"
+                                @change="importDataFromFile">
+                        </label>
+                        <!-- 備份資料 -->
+                        <button @click="exportData" class="text-blue-500 font-bold text-xs">
+                            備份資料
+                        </button>
+                    </div>
+                    <button @click="clearAll" class="text-red-300 font-bold text-xs">
+                        清空
+                    </button>
                 </div>
             </div>
         </div>
@@ -253,6 +270,7 @@
                         <div class="grid grid-cols-2 gap-3">
                             <div
                                 v-for="name in getActiveMembersInGen(g)"
+                                :key="g + '-' + name"
                                 @click="currentMember = name"
                                 class="bg-white p-5 rounded-2xl shadow-sm text-center cursor-pointer">
                                 <div class="font-black text-gray-700">{{ name }}</div>
@@ -766,6 +784,40 @@
                         a.href = URL.createObjectURL(blob);
                         a.download = `sakura_backup.txt`;
                         a.click();
+                    },
+                    async importDataFromFile(event) {
+                        const file = event.target.files[0];
+                        if (!file) return;
+
+                        try {
+                            const text = await file.text();
+                            const json = JSON.parse(text);
+
+                            if (!json || typeof json !== 'object') {
+                                throw new Error('JSON 格式錯誤');
+                            }
+
+                            const { rawItems, ownedIds, seriesImages } = json;
+
+                            if (!Array.isArray(rawItems)) {
+                                throw new Error('rawItems 格式錯誤');
+                            }
+
+                            this.rawItems = rawItems;
+                            this.ownedIds = new Set(Array.isArray(ownedIds) ? ownedIds : []);
+                            this.seriesImages = seriesImages && typeof seriesImages === 'object'
+                                ? seriesImages
+                                : {};
+
+                            await this.saveData();
+                            alert('還原完成！');
+                            // 清空 input 值，避免同檔案再選一次無法觸發 change
+                            event.target.value = '';
+                        } catch (e) {
+                            console.error('還原失敗：', e);
+                            alert('還原失敗：檔案格式可能有問題，或不是正確的備份檔。');
+                            event.target.value = '';
+                        }
                     },
                     async clearAll() {
                         if (confirm('清空所有資料？')) {
