@@ -16,9 +16,8 @@
       text-transform: none !important;
       box-sizing: border-box;
     }
-    [v-cloak] {
-      display: none;
-    }
+    [v-cloak] { display: none; }
+
     .photo-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -299,13 +298,30 @@
           </button>
         </div>
 
-        <div class="flex justify-between mt-8 border-t pt-4 text-xs">
+        <!-- 匯出 / 匯入 / 清空 -->
+        <div class="flex justify-center gap-4 mt-8 border-t pt-4 text-xs items-center">
           <button @click="exportData" class="text-blue-500 font-bold">
-            備份資料
+            匯出備份
           </button>
+
+          <button
+            @click="$refs.importFile.click()"
+            class="text-emerald-500 font-bold"
+          >
+            匯入還原
+          </button>
+
           <button @click="clearAll" class="text-red-300 font-bold">
             清空
           </button>
+
+          <input
+            type="file"
+            ref="importFile"
+            class="hidden"
+            accept=".txt,.json"
+            @change="importData"
+          />
         </div>
       </div>
     </div>
@@ -337,13 +353,20 @@
       <div v-if="!currentMember && viewMode === 'member'">
         <div v-for="(ms, g) in presetMembers" :key="g">
           <div v-if="getActiveMembersInGen(g).length > 0">
-            <h2 class="section-header">
+            <h2 class="section-header" @click="toggleMemberListCat(g)">
               <span>{{ g }}</span>
-              <span class="text-[10px] text-slate-400"
-                >{{ getGenActiveCount(g) }} Member</span
-              >
+              <span class="text-[10px] text-slate-400">
+                {{ getGenActiveCount(g) }} Members
+                <span class="ml-1">
+                  {{ collapsedMemberListCats.has(g) ? '▼' : '▲' }}
+                </span>
+              </span>
             </h2>
-            <div class="grid grid-cols-2 gap-3">
+
+            <div
+              v-if="!collapsedMemberListCats.has(g)"
+              class="grid grid-cols-2 gap-3"
+            >
               <div
                 v-for="name in getActiveMembersInGen(g)"
                 :key="name"
@@ -358,6 +381,7 @@
             </div>
           </div>
         </div>
+
         <div
           v-if="memberList.length === 0"
           class="text-center py-24 text-slate-300 font-bold italic"
@@ -368,15 +392,54 @@
 
       <!-- 系列模式 -->
       <div v-if="!currentMember && viewMode === 'series'">
+<!-- 系列模式：篩選列開關 -->
+<div class="flex justify-end mb-2 px-1">
+  <button
+    @click="showSeriesFilter = !showSeriesFilter"
+    class="text-[10px] font-bold text-slate-500"
+  >
+    {{ showSeriesFilter ? '收起篩選 ▲' : '展開篩選 ▼' }}
+  </button>
+</div>
+
+<!-- 系列模式：成員篩選 -->
+<div v-if="showSeriesFilter"
+     class="flex flex-wrap gap-2 mb-3 px-1">
+  <button
+    v-for="(order, name) in memberOrderMap"
+    :key="name"
+    @click="
+      seriesMemberFilter.has(name)
+        ? seriesMemberFilter.delete(name)
+        : seriesMemberFilter.add(name)
+    "
+    class="text-[10px] px-3 py-1 rounded-full border font-bold"
+    :class="
+      seriesMemberFilter.has(name)
+        ? 'bg-pink-500 text-white border-pink-500'
+        : 'bg-white text-slate-400 border-slate-200'
+    "
+  >
+    {{ name }}
+  </button>
+
+  <button
+    v-if="seriesMemberFilter.size"
+    @click="seriesMemberFilter.clear()"
+    class="text-[10px] px-3 py-1 rounded-full bg-slate-200 text-slate-600 font-bold"
+  >
+    清除
+  </button>
+</div>
+
         <div v-for="(seriesObj, catName) in itemsBySeriesSorted" :key="catName">
-          <!-- 大分類標題，可收合 -->
           <h2 class="section-header" @click="toggleCategorySeries(catName)">
             <span>{{ catName }}</span>
             <span class="text-[10px] text-slate-400">
               {{ Object.keys(seriesObj).length }} 系列
-              <span class="ml-1"
-                >{{ collapsedSeriesCats.has(catName) ? '▼' : '▲' }}</span
-              >
+              <span class="ml-1">
+                {{ collapsedSeriesCats.has(catName) ? '▼' : '▲' }}
+              </span>
             </span>
           </h2>
 
@@ -387,7 +450,6 @@
               :id="'series-target-' + seriesName"
               class="mb-2 bg-white rounded-2xl shadow-sm border overflow-hidden"
             >
-              <!-- 系列標題列 -->
               <div
                 @click="toggleSeriesMode(catName, seriesName)"
                 class="px-4 py-3 flex justify-between items-center cursor-pointer"
@@ -401,11 +463,10 @@
                   </span>
                 </div>
                 <div class="text-[9px] font-bold text-pink-400 shrink-0">
-                  {{ getUniqueMemberCount(batches) }} Member(s)
+                  {{ getUniqueMemberCount(batches) }} Members
                 </div>
               </div>
 
-              <!-- 展開內容：每一位成員一列（照成員順序排） -->
               <div
                 v-if="expandedSeriesMode.has(catName + seriesName)"
                 class="p-3 border-t bg-slate-50/50 space-y-3"
@@ -415,7 +476,6 @@
                   :key="b.batchId"
                   class="flex items-center gap-4 py-2 border-b border-gray-50 last:border-0"
                 >
-                  <!-- 左：成員名稱 -->
                   <div
                     @click="currentMember = b.memberName"
                     class="text-[11px] font-bold cursor-pointer flex items-center min-w-[90px] max-w-[90px]"
@@ -429,7 +489,6 @@
                     </span>
                   </div>
 
-                  <!-- 中：4 個格子（固定寬度，皆對齊） -->
                   <div class="series-photo-grid w-[170px] shrink-0">
                     <div
                       v-for="item in b.items"
@@ -446,7 +505,6 @@
                     </div>
                   </div>
 
-                  <!-- 右：進度 -->
                   <div
                     class="text-[9px] font-black text-right w-[40px] shrink-0"
                     :class="
@@ -470,7 +528,6 @@
 
       <!-- 成員詳細頁 -->
       <div v-if="currentMember">
-        <!-- 標題列（成員切換） -->
         <div class="flex items-center justify-between mb-6 px-1">
           <div class="flex items-center gap-2">
             <button
@@ -507,7 +564,6 @@
           </div>
         </div>
 
-        <!-- 依分類區塊 -->
         <div
           v-for="catBlock in memberItemsGrouped"
           :key="catBlock.category"
@@ -521,9 +577,7 @@
             <span class="text-[10px] text-slate-400">
               {{ catBlock.items.length }} 系列
               <span class="ml-1">
-                {{
-                  collapsedMemberCats.has(catBlock.category) ? '▼' : '▲'
-                }}
+                {{ collapsedMemberCats.has(catBlock.category) ? '▼' : '▲' }}
               </span>
             </span>
           </h2>
@@ -535,7 +589,6 @@
               :id="'batch-target-' + batch.batchId"
               class="mb-2.5 bg-white rounded-xl shadow-sm border overflow-hidden"
             >
-              <!-- 系列標題列（含進度＋刪除） -->
               <div
                 class="p-4 flex justify-between items-center cursor-pointer"
                 @click="toggleSeries(batch.batchId)"
@@ -580,12 +633,10 @@
                 </div>
               </div>
 
-              <!-- 展開內容 -->
               <div
                 v-if="expandedSeries.has(batch.batchId)"
                 class="p-4 border-t bg-slate-50/20"
               >
-                <!-- 代表圖 -->
                 <div
                   class="mb-4 relative aspect-video bg-slate-100 rounded-xl overflow-hidden group"
                 >
@@ -616,7 +667,6 @@
                   </label>
                 </div>
 
-                <!-- 4 格 -->
                 <div class="photo-grid">
                   <div
                     v-for="item in batch.items"
@@ -639,7 +689,7 @@
       </div>
     </main>
 
-    <!-- 回頂端按鈕（系列模式） -->
+    <!-- 回頂端按鈕 -->
     <button
       v-if="showScrollTop"
       @click="scrollToTop"
@@ -659,629 +709,688 @@
   </div>
 
   <script>
-    (function () {
-      const { createApp, nextTick } = Vue;
+    const { createApp } = Vue;
 
-      /* ---------- 儲存層：IndexedDB 優先，退回 localStorage ---------- */
-      function createStorage() {
-        // localStorage fallback
-        if (!("indexedDB" in window)) {
-          console.warn(
-            "此裝置不支援 IndexedDB，將使用 localStorage，圖片容量可能較小。"
-          );
-          const PREFIX = "sakura_kv_";
-          return {
-            async get(key) {
-              try {
-                const raw = localStorage.getItem(PREFIX + key);
-                return raw ? JSON.parse(raw) : null;
-              } catch (e) {
-                console.error("localStorage get 錯誤：", e);
-                return null;
-              }
-            },
-            async set(key, value) {
-              try {
-                localStorage.setItem(PREFIX + key, JSON.stringify(value));
-              } catch (e) {
-                console.error("localStorage set 錯誤：", e);
-              }
-            },
-            async clear() {
-              try {
-                Object.keys(localStorage).forEach((k) => {
-                  if (k.startsWith(PREFIX)) localStorage.removeItem(k);
-                });
-              } catch (e) {
-                console.error("localStorage clear 錯誤：", e);
-              }
-            },
-          };
-        }
-
-        const DB_NAME = "sakura_collection_db";
-        const STORE_NAME = "kv";
-
-        function openDB() {
-          return new Promise((resolve, reject) => {
-            const req = indexedDB.open(DB_NAME, 1);
-            req.onupgradeneeded = (event) => {
-              const db = event.target.result;
-              if (!db.objectStoreNames.contains(STORE_NAME)) {
-                db.createObjectStore(STORE_NAME);
-              }
-            };
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => reject(req.error);
-          });
-        }
-
-        console.log("使用 IndexedDB 儲存資料。");
-
+    function createStorage() {
+      if (!('indexedDB' in window)) {
+        console.warn('此裝置不支援 IndexedDB，將使用 localStorage。');
+        const PREFIX = 'sakura_kv_';
         return {
           async get(key) {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-              const tx = db.transaction(STORE_NAME, "readonly");
-              const store = tx.objectStore(STORE_NAME);
-              const req = store.get(key);
-              req.onsuccess = () => {
-                const raw = req.result;
-                if (typeof raw === "string") {
-                  try {
-                    resolve(JSON.parse(raw));
-                  } catch (e) {
-                    console.error("解析 IndexedDB JSON 失敗：", e);
-                    resolve(null);
-                  }
-                } else {
-                  resolve(raw ?? null);
-                }
-              };
-              req.onerror = () => reject(req.error);
-            });
+            try {
+              const raw = localStorage.getItem(PREFIX + key);
+              return raw ? JSON.parse(raw) : null;
+            } catch (e) {
+              console.error('localStorage get 錯誤：', e);
+              return null;
+            }
           },
           async set(key, value) {
-            const db = await openDB();
-            let payload;
             try {
-              payload = JSON.stringify(value);
+              localStorage.setItem(PREFIX + key, JSON.stringify(value));
             } catch (e) {
-              console.error("準備寫入 IndexedDB 時 JSON 序列化失敗：", e);
-              throw e;
+              console.error('localStorage set 錯誤：', e);
             }
-            return new Promise((resolve, reject) => {
-              const tx = db.transaction(STORE_NAME, "readwrite");
-              const store = tx.objectStore(STORE_NAME);
-              const req = store.put(payload, key);
-              req.onsuccess = () => resolve();
-              req.onerror = () => reject(req.error);
-            });
           },
           async clear() {
-            const db = await openDB();
-            return new Promise((resolve, reject) => {
-              const tx = db.transaction(STORE_NAME, "readwrite");
-              const store = tx.objectStore(STORE_NAME);
-              const req = store.clear();
-              req.onsuccess = () => resolve();
-              req.onerror = () => reject(req.error);
-            });
+            try {
+              Object.keys(localStorage).forEach((k) => {
+                if (k.startsWith(PREFIX)) localStorage.removeItem(k);
+              });
+            } catch (e) {
+              console.error('localStorage clear 錯誤：', e);
+            }
           },
         };
       }
 
-      const { get, set, clear } = createStorage();
+      const DB_NAME = 'sakura_collection_db';
+      const STORE_NAME = 'kv';
 
-      /* --------------------------- Vue App --------------------------- */
-      createApp({
-        data() {
-          return {
-            viewMode: "member",
-            addMode: "member",
-            showInput: false,
-            currentMember: null,
-            selectedGen: "",
-            selectedCategory: "",
-            selectedPreset: "",
-            batchMemberNames: [],
-            scrollY: 0,
-            showScrollTop: false,
+      function openDB() {
+        return new Promise((resolve, reject) => {
+          const req = indexedDB.open(DB_NAME, 1);
+          req.onupgradeneeded = function (event) {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+              db.createObjectStore(STORE_NAME);
+            }
+          };
+          req.onsuccess = function () {
+            resolve(req.result);
+          };
+          req.onerror = function () {
+            reject(req.error);
+          };
+        });
+      }
 
-            presetMembers: {"二期生": ["遠藤光莉", "大園玲", "大沼晶保", "幸阪茉里乃", "武元唯衣", "田村保乃", "藤吉夏鈴", "増本綺良", "松田里奈", "森田ひかる", "守屋麗奈", "山﨑天"], "三期生": ["石森璃花", "遠藤理子", "小田倉麗奈", "小島凪紗", "谷口愛季", "中嶋優月", "的野美青", "向井純葉", "村井優", "村山美羽", "山下瞳月"], "四期生": ["浅井恋乃未", "稲熊ひな", "勝又春", "佐藤愛桜", "中川智尋", "松本和子", "目黒陽色", "山川宇衣", "山田桃実"], "畢業生": ["松平璃子", "守屋茜", "渡邉梨加", "渡邉理佐", "原田葵", "尾関梨香", "菅井友香", "関有美子", "土生瑞穂", "小林由依", "齋藤冬優花", "上村莉菜", "小池美波", "井上梨名"]},
+      console.log('使用 IndexedDB 儲存資料。');
+
+      return {
+        async get(key) {
+          const db = await openDB();
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.get(key);
+            req.onsuccess = function () {
+              const raw = req.result;
+              if (typeof raw === 'string') {
+                try {
+                  resolve(JSON.parse(raw));
+                } catch (e) {
+                  console.error('解析 IndexedDB JSON 失敗：', e);
+                  resolve(null);
+                }
+              } else {
+                resolve(raw != null ? raw : null);
+              }
+            };
+            req.onerror = function () {
+              reject(req.error);
+            };
+          });
+        },
+        async set(key, value) {
+          const db = await openDB();
+          var payload;
+          try {
+            payload = JSON.stringify(value);
+          } catch (e) {
+            console.error('準備寫入 IndexedDB 時 JSON 序列化失敗：', e);
+            throw e;
+          }
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.put(payload, key);
+            req.onsuccess = function () {
+              resolve();
+            };
+            req.onerror = function () {
+              reject(req.error);
+            };
+          });
+        },
+        async clear() {
+          const db = await openDB();
+          return new Promise((resolve, reject) => {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.clear();
+            req.onsuccess = function () {
+              resolve();
+            };
+            req.onerror = function () {
+              reject(req.error);
+            };
+          });
+        },
+      };
+    }
+
+    const storage = createStorage();
+    const get = storage.get;
+    const set = storage.set;
+    const clear = storage.clear;
+
+    createApp({
+      data() {
+        return {
+          viewMode: 'member',
+          addMode: 'member',
+          showInput: false,
+          currentMember: null,
+          selectedGen: '',
+          selectedCategory: '',
+          selectedPreset: '',
+          batchMemberNames: [],
+          scrollY: 0,
+          showScrollTop: false,
+
+          presetMembers: {"二期生": ["遠藤光莉", "大園玲", "大沼晶保", "幸阪茉里乃", "武元唯衣", "田村保乃", "藤吉夏鈴", "増本綺良", "松田里奈", "森田ひかる", "守屋麗奈", "山﨑天"], "三期生": ["石森璃花", "遠藤理子", "小田倉麗奈", "小島凪紗", "谷口愛季", "中嶋優月", "的野美青", "向井純葉", "村井優", "村山美羽", "山下瞳月"], "四期生": ["浅井恋乃未", "稲熊ひな", "勝又春", "佐藤愛桜", "中川智尋", "松本和子", "目黒陽色", "山川宇衣", "山田桃実"], "畢業生": ["松平璃子", "守屋茜", "渡邉梨加", "渡邉理佐", "原田葵", "尾関梨香", "菅井友香", "関有美子", "土生瑞穂", "小林由依", "齋藤冬優花", "上村莉菜", "小池美波", "井上梨名"]},
                     categorizedSeries: {"封入": ["1st Single「Nobody's fault」封入", "2nd Single「BAN」封入", "3rd Single「流れ弾」封入", "4th Single「五月雨よ」封入", "1st Album「As you know?」封入", "5th Single「桜月」封入", "6th Single「Start over!」封入", "7th Single「承認欲求」封入", "8th Single「何歳の頃に戻りたいのか?」 封入", "9th Single「自業自得」封入", "10th Single「I want tomorrow to come」封入", "11th Single「UDAGAWA GENERATION」封入", "2nd Album「Addiction」封入", "12th Single「Make or Break」封入", "13th Single「Unhappy birthday構文」封入", "14th Single「The growing up train」封入"], "MV衣裝": ["「Nobody's fault」MVロケーション衣装", "「なぜ恋をして来なかったんだろう?」MVロケーション衣装", "「Buddies」MVロケーション衣装", "「BAN」MVロケーション衣装", "「偶然の答え」MVロケーション衣装", "「思ったよりも寂しくはない」MVロケーション衣装", "「流れ弾」MVロケーション衣装", "「Dead end」MVロケーション衣装", "「無言の宇宙」MVロケーション衣装", "「Dead end」MVロケーション衣装", "「流れ弾」MV黒衣装", "「五月雨よ」MVロケーション衣装", "「五月雨よ」MVパフォーマンス衣装", "「車間距離」MVロケーション衣装", "「僕のジレンマ」MVロケーション衣装", "「摩擦係数」MV衣装", "「桜月」MV衣装", "「桜月」MV青衣装", "「Cool」MV衣装", "「夏の近道」 MV衣装", "「夏の近道」 MV制服", "「BAN」 MV衣装", "「Start over!」MV衣装", "「ドローン旋回中」MV衣装", "「静寂の暴力」 MV衣装", "「Nobody's fault」MV衣装", "「承認欲求」MV衣装", "「マモリビト」 MV衣装", "「隙間風よ」MV衣装", "「何歳の頃に戻りたいのか?」MV衣装", "「何度 LOVE SONG の歌詞を読み返しただろう」 MV衣装", "「油を注せ!」 MV衣装", "「自業自得」MV衣装", "「愛し合いなさい」 MV衣装", "「引きこもる時間はない」 MV衣装", "「I want tomorrow to come」MV衣装", "「本質的なこと」 MV衣装", "「僕は僕を好きになれない」 MV衣装", "「UDAGAWA GENERATION」MV衣装", "「Nothing Special」MV衣装", "「Nightmare 症候群」MV衣装", "「Addiction」 MV衣装", "「Make or Break」 MV衣装", "「港区パセリ」 MV衣装", "「死んだふり」MV衣装", "「Unhappy birthday構文」MV衣装", "「木枯らしは泣かない」MV衣装", "「Alter ego」MV衣装", "「The growing up train」MV衣装"], "封面": ["流れ弾ジャケット写真衣装", "「Start over!」 ジャケット写真衣装", "「承認欲求」ジャケット写真衣装", "「何歳の頃に戻りたいのか?」ジャケット写真衣装", "「自業自得」ジャケット写真衣装", "「I want tomorrow to come」ジャケット写真衣装", "「UDAGAWA GENERATION」ジャケット写真衣装", "「Make or Break」ジャケット写真衣装", "「Unhappy birthday構文」ジャケット写真衣装", "「The growing up train」ジャケット写真衣装"], "LIVE衣裝": ["三期生ブックレット衣装", "「3rd TOUR 2023」オープニング衣装", "「3rd TOUR 2023」白スーツ衣装", "2023年夏フェス衣装", "「3rd Single BACKS LIVE!!」衣装", "「3rd TOUR 2023」ピンク衣装", "「3rd YEAR ANNIVERSARY LIVE」ライブ衣装", "「7th Single BACKS LIVE!!」オープニング衣装", "「小林由依 卒業コンサート」ライブ衣装", "「小林由依 卒業コンサート」赤衣装", "「3rd TOUR 2023」ライブ衣装", "2023年 年末歌唱衣装", "「8th Single BACKS LIVE!!」ライブ衣装", "「4th ARENA TOUR 2024」ライブ衣装", "「3rd YEAR ANNIVERSARY LIVE」ライブ衣装", "「4th ARENA TOUR IN 東京ドーム」オープニング衣装", "「9th Single BACKS LIVE!!」オープニング衣装", "2023年 年末衣装", "2024年夏フェス衣装", "「4th ARENA TOUR」オープニング衣装", "「4th YEAR ANNIVERSARY LIVE」ライブ衣装", "「4th ARENA TOUR」ライブ衣装", "「三期生ライブ」オープニング衣装", "「4th ARENA TOUR IN 東京ドーム」ライブ衣装", "「10th Single BACKS LIVE!!」ライブ衣装", "「5th TOUR 2025 “Addiction”」ライブ衣装", "「三期生ライブ」衣装", "「12th Single BACKS LIVE!!」ライブ衣装", "「5th TOUR 2025 “Addiction”」黑衣装", "「12th Single BACKS LIVE!!」黑衣装"], "其他": ["2023年 冬私服コーデ", "スーツコーデ", "カラーコーデ", "サマーワンピース", "デニムコーデ", "2023年 ハロウィン衣装", "2023年 クリスマスサンタ衣装", "2023年 読書コーデ", "2024年 振袖衣装", "おうちコーデ", "ジャンプスーツ", "2024年 春私服コーデ", "カラーデニム", "2024年浴衣", "麥わら帽子コーデ", "Tシャツコーデ", "ワイシャツコーデ", "2024年 ハロウィン衣装", "カラーニットコーデ", "2024年 クリスマスサンタ衣装", "どうぶつ着ぐるみ", "マフラーコーデ", "2025年振袖", "いぬみみコーデ", "モードコーデ", "冬私服コーデ", "ネクタイコーデ", "レザージャケットコーデ", "2025年浴衣", "ポロシャツコーデ", "クラシックコーデ", "チェックコーデ", "パイレーツ衣装", "冬服", "2025年 サンタ衣装", "スタイリング制服", "2026年 振袖", "ジャージ", "2026年 バレンタインコーデ"], "特殊": ["【会場予約特典】 東京ドーム限定成員生寫真", "東京ドーム完賣御禮紀念!! ライブ會場撮りおろしプレミアム生寫真", "福袋 2025 「4th ARENA TOUR IN 東京ドーム」 オープニング衣装", "福袋 2026 MV衣装"]},
 
-            newItem: { name: "", series: "", category: "" },
-            rawItems: [],
-            ownedIds: new Set(),
-            seriesImages: {},
-            seriesOrder: {},
+          newItem: { name: '', series: '', category: '' },
+          rawItems: [],
+          ownedIds: new Set(),
+          seriesImages: {},
+          seriesOrder: {},
 
-            expandedSeries: new Set(),
-            expandedSeriesMode: new Set(),
-            collapsedMemberCats: new Set(),
-            collapsedSeriesCats: new Set(),
+          expandedSeries: new Set(),
+          expandedSeriesMode: new Set(),
+          collapsedMemberCats: new Set(),
+          collapsedSeriesCats: new Set(),
+          collapsedMemberListCats: new Set(),
+          seriesMemberFilter: new Set(), 
+          showSeriesFilter: false, 
 
-            zoomedImg: null,
-          };
+          zoomedImg: null,
+        };
+      },
+      computed: {
+        memberList() {
+          return Array.from(
+            new Set(this.rawItems.map(function (i) { return i.name; }))
+          );
         },
-        computed: {
-          memberList() {
-            return [...new Set(this.rawItems.map((i) => i.name))];
-          },
+        memberOrderMap() {
+          var map = {};
+          var idx = 0;
+          var self = this;
+          Object.keys(this.presetMembers).forEach(function (gen) {
+            self.presetMembers[gen].forEach(function (name) {
+              if (map[name] == null) map[name] = idx++;
+            });
+          });
+          return map;
+        },
 
-          // 成員排序對照：照 presetMembers 的順序給每個成員一個 index
-          memberOrderMap() {
-            const map = {};
-            let idx = 0;
-            for (const gen of Object.keys(this.presetMembers)) {
-              const list = this.presetMembers[gen];
-              list.forEach((name) => {
-                if (map[name] == null) {
-                  map[name] = idx++;
-                }
-              });
-            }
-            return map;
-          },
-
-          // 依分類 / 系列整理，用於系列模式
-          itemsBySeriesNormalized() {
-            const grouped = {};
-            this.rawItems.forEach((item) => {
-              const cat = item.category || "其他";
-              if (!grouped[cat]) grouped[cat] = {};
-              if (!grouped[cat][item.series]) grouped[cat][item.series] = [];
-              let batch = grouped[cat][item.series].find(
-                (b) => b.batchId === item.batchId
-              );
-              if (!batch) {
-                batch = {
-                  batchId: item.batchId,
-                  seriesName: item.series,
-                  memberName: item.name,
-                  items: [],
-                  totalSets: 1,
-                  groupIndex: 1,
-                };
-                grouped[cat][item.series].push(batch);
+        itemsBySeriesNormalized() {
+          var grouped = {};
+          var self = this;
+          this.rawItems.forEach(function (item) {
+            var cat = item.category || '其他';
+            if (!grouped[cat]) grouped[cat] = {};
+            if (!grouped[cat][item.series]) grouped[cat][item.series] = [];
+            var batches = grouped[cat][item.series];
+            var batch = null;
+            for (var i = 0; i < batches.length; i++) {
+              if (batches[i].batchId === item.batchId) {
+                batch = batches[i];
+                break;
               }
-              batch.items.push(item);
-            });
-
-            // 計算每位成員在同一系列裡的 SET 順序，並照成員順序排序列
-            Object.values(grouped).forEach((seriesMap) => {
-              Object.values(seriesMap).forEach((batches) => {
-                const perMember = {};
-                batches.forEach((batch) => {
-                  if (!perMember[batch.memberName])
-                    perMember[batch.memberName] = [];
-                  perMember[batch.memberName].push(batch);
-                });
-
-                Object.values(perMember).forEach((list) => {
-                  list.sort((a, b) =>
-                    String(a.batchId).localeCompare(String(b.batchId))
-                  );
-                  const total = list.length;
-                  list.forEach((batch, idx) => {
-                    batch.totalSets = total;
-                    batch.groupIndex = idx + 1;
-                  });
-                });
-
-                // 整個系列的列照成員順序排
-                batches.sort((a, b) => {
-                  const ao =
-                    this.memberOrderMap[a.memberName] != null
-                      ? this.memberOrderMap[a.memberName]
-                      : 9999;
-                  const bo =
-                    this.memberOrderMap[b.memberName] != null
-                      ? this.memberOrderMap[b.memberName]
-                      : 9999;
-                  if (ao !== bo) return ao - bo;
-                  return String(a.memberName).localeCompare(
-                    String(b.memberName),
-                    "ja"
-                  );
-                });
-              });
-            });
-
-            return grouped;
-          },
-
-          // 系列模式：系列顯示順序照 categorizedSeries，然後補上自訂的
-          itemsBySeriesSorted() {
-            const result = {};
-            const base = this.itemsBySeriesNormalized;
-
-            for (const [cat, seriesObj] of Object.entries(base)) {
-              const baseOrder = this.categorizedSeries[cat] || [];
-              const customOrder = this.seriesOrder[cat] || [];
-
-              const seen = new Set();
-              const finalOrder = [];
-
-              // ① 先照你在 categorizedSeries 裡的順序
-              baseOrder.forEach((name) => {
-                if (seriesObj[name]) {
-                  finalOrder.push(name);
-                  seen.add(name);
-                }
-              });
-
-              // ② 再補上 seriesOrder 裡有但 categorizedSeries 沒列到的
-              customOrder.forEach((name) => {
-                if (seriesObj[name] && !seen.has(name)) {
-                  finalOrder.push(name);
-                  seen.add(name);
-                }
-              });
-
-              // ③ 最後把剩下實際有資料但前面沒排到的補上（如自訂系列）
-              Object.keys(seriesObj).forEach((name) => {
-                if (!seen.has(name)) {
-                  finalOrder.push(name);
-                  seen.add(name);
-                }
-              });
-
-              const sortedSeries = {};
-              finalOrder.forEach((name) => {
-                sortedSeries[name] = seriesObj[name];
-              });
-
-              result[cat] = sortedSeries;
             }
+            if (!batch) {
+              batch = {
+                batchId: item.batchId,
+                seriesName: item.series,
+                memberName: item.name,
+                items: [],
+                totalSets: 1,
+                groupIndex: 1,
+              };
+              batches.push(batch);
+            }
+            batch.items.push(item);
+          });
 
-            return result;
-          },
-
-          // 成員模式：分類＋系列順序也照 categorizedSeries
-          memberItemsGrouped() {
-            if (!this.currentMember) return [];
-
-            const groupedMap = {};
-
-            // 先依分類把目前成員的所有 batch 收集起來
-            this.rawItems
-              .filter((i) => i.name === this.currentMember)
-              .forEach((item) => {
-                const cat = item.category || "其他";
-                if (!groupedMap[cat]) {
-                  groupedMap[cat] = { category: cat, items: [] };
-                }
-                let batch = groupedMap[cat].items.find(
-                  (b) => b.batchId === item.batchId
-                );
-                if (!batch) {
-                  batch = {
-                    batchId: item.batchId,
-                    seriesName: item.series,
-                    items: [],
-                    totalSets: 1,
-                    groupIndex: 1,
-                  };
-                  groupedMap[cat].items.push(batch);
-                }
-                batch.items.push(item);
+          Object.keys(grouped).forEach((cat) => {
+            var seriesMap = grouped[cat];
+            Object.keys(seriesMap).forEach((s) => {
+              var batches = seriesMap[s];
+              var perMember = {};
+              batches.forEach(function (batch) {
+                if (!perMember[batch.memberName]) perMember[batch.memberName] = [];
+                perMember[batch.memberName].push(batch);
               });
-
-            // 每個分類裡，先處理同系列多 SET 的資訊
-            Object.values(groupedMap).forEach((catBlock) => {
-              const perSeries = {};
-              catBlock.items.forEach((batch) => {
-                if (!perSeries[batch.seriesName])
-                  perSeries[batch.seriesName] = [];
-                perSeries[batch.seriesName].push(batch);
-              });
-
-              Object.values(perSeries).forEach((list) => {
-                list.sort((a, b) =>
-                  String(a.batchId).localeCompare(String(b.batchId)
-                ));
-                const total = list.length;
-                list.forEach((batch, idx) => {
+              Object.keys(perMember).forEach(function (m) {
+                var list = perMember[m];
+                list.sort(function (a, b) {
+                  return String(a.batchId).localeCompare(String(b.batchId));
+                });
+                var total = list.length;
+                list.forEach(function (batch, idx) {
                   batch.totalSets = total;
                   batch.groupIndex = idx + 1;
                 });
               });
-            });
-
-            const result = [];
-
-            // 分類顯示順序
-            const categoryBaseOrder = ["封入", "MV衣裝", "封面照", "LIVE衣裝", "其他"];
-
-            const cats = Object.keys(groupedMap);
-
-            cats.sort((a, b) => {
-              const ai = categoryBaseOrder.indexOf(a);
-              const bi = categoryBaseOrder.indexOf(b);
-              const av = ai === -1 ? 999 : ai;
-              const bv = bi === -1 ? 999 : bi;
-              if (av !== bv) return av - bv;
-              return String(a).localeCompare(String(b), "zh-Hant");
-            });
-
-            cats.forEach((cat) => {
-              const block = groupedMap[cat];
-              const baseOrder = this.categorizedSeries[cat] || [];
-
-              const seenBatchIds = new Set();
-              const sortedItems = [];
-
-              // ① 先照 baseOrder 裡系列順序排
-              baseOrder.forEach((seriesName) => {
-                block.items.forEach((batch) => {
-                  if (
-                    batch.seriesName === seriesName &&
-                    !seenBatchIds.has(batch.batchId)
-                  ) {
-                    sortedItems.push(batch);
-                    seenBatchIds.add(batch.batchId);
-                  }
-                });
+              batches.sort(function (a, b) {
+                var ao = (self.memberOrderMap[a.memberName] != null
+                  ? self.memberOrderMap[a.memberName]
+                  : 9999);
+                var bo = (self.memberOrderMap[b.memberName] != null
+                  ? self.memberOrderMap[b.memberName]
+                  : 9999);
+                if (ao !== bo) return ao - bo;
+                return String(a.memberName).localeCompare(String(b.memberName), 'ja');
               });
+            });
+          });
 
-              // ② 再補上這個分類裡 baseOrder 沒提到的系列（包含自訂系列）
-              block.items.forEach((batch) => {
-                if (!seenBatchIds.has(batch.batchId)) {
+          return grouped;
+        },
+
+        itemsBySeriesSorted() {
+          var result = {};
+          var base = this.itemsBySeriesNormalized;
+          var self = this;
+
+          Object.keys(base).forEach(function (cat) {
+            var seriesObj = base[cat];
+            var baseOrder = self.categorizedSeries[cat] || [];
+            var customOrder = self.seriesOrder[cat] || [];
+            var seen = {};
+            var finalOrder = [];
+
+    // 🔽 成員篩選（依已選成員隱藏不符合的系列）
+    if (self.seriesMemberFilter && self.seriesMemberFilter.size) {
+      var filtered = {};
+      Object.keys(seriesObj).forEach(function (seriesName) {
+        var batches = seriesObj[seriesName];
+        var hasMatch = batches.some(function (b) {
+          return self.seriesMemberFilter.has(b.memberName);
+        });
+        if (hasMatch) {
+          filtered[seriesName] = batches;
+        }
+      });
+      seriesObj = filtered;
+    }
+
+            baseOrder.forEach(function (name) {
+              if (seriesObj[name]) {
+                finalOrder.push(name);
+                seen[name] = true;
+              }
+            });
+
+            customOrder.forEach(function (name) {
+              if (seriesObj[name] && !seen[name]) {
+                finalOrder.push(name);
+                seen[name] = true;
+              }
+            });
+
+            Object.keys(seriesObj).forEach(function (name) {
+              if (!seen[name]) {
+                finalOrder.push(name);
+                seen[name] = true;
+              }
+            });
+
+            var sortedSeries = {};
+            finalOrder.forEach(function (name) {
+              sortedSeries[name] = seriesObj[name];
+            });
+            result[cat] = sortedSeries;
+          });
+
+          return result;
+        },
+
+        memberItemsGrouped() {
+          if (!this.currentMember) return [];
+
+          var groupedMap = {};
+          var self = this;
+
+          this.rawItems
+            .filter((i) => i.name === this.currentMember)
+            .forEach(function (item) {
+              var cat = item.category || '其他';
+              if (!groupedMap[cat]) {
+                groupedMap[cat] = { category: cat, items: [] };
+              }
+              var list = groupedMap[cat].items;
+              var batch = null;
+              for (var i = 0; i < list.length; i++) {
+                if (list[i].batchId === item.batchId) {
+                  batch = list[i];
+                  break;
+                }
+              }
+              if (!batch) {
+                batch = {
+                  batchId: item.batchId,
+                  seriesName: item.series,
+                  items: [],
+                  totalSets: 1,
+                  groupIndex: 1,
+                };
+                list.push(batch);
+              }
+              batch.items.push(item);
+            });
+
+          Object.keys(groupedMap).forEach(function (cat) {
+            var catBlock = groupedMap[cat];
+            var perSeries = {};
+            catBlock.items.forEach(function (batch) {
+              if (!perSeries[batch.seriesName]) perSeries[batch.seriesName] = [];
+              perSeries[batch.seriesName].push(batch);
+            });
+            Object.keys(perSeries).forEach(function (seriesName) {
+              var list = perSeries[seriesName];
+              list.sort(function (a, b) {
+                return String(a.batchId).localeCompare(String(b.batchId));
+              });
+              var total = list.length;
+              list.forEach(function (batch, idx) {
+                batch.totalSets = total;
+                batch.groupIndex = idx + 1;
+              });
+            });
+          });
+
+          var result = [];
+          var categoryBaseOrder = ['封入', 'MV衣裝', '封面照', 'LIVE衣裝', '其他'];
+          var cats = Object.keys(groupedMap);
+
+          cats.sort(function (a, b) {
+            var ai = categoryBaseOrder.indexOf(a);
+            var bi = categoryBaseOrder.indexOf(b);
+            var av = ai === -1 ? 999 : ai;
+            var bv = bi === -1 ? 999 : bi;
+            if (av !== bv) return av - bv;
+            return String(a).localeCompare(String(b), 'zh-Hant');
+          });
+
+          cats.forEach(function (cat) {
+            var block = groupedMap[cat];
+            var baseOrder = self.categorizedSeries[cat] || [];
+            var seen = {};
+            var sortedItems = [];
+
+            baseOrder.forEach(function (seriesName) {
+              block.items.forEach(function (batch) {
+                if (
+                  batch.seriesName === seriesName &&
+                  !seen[batch.batchId]
+                ) {
                   sortedItems.push(batch);
-                  seenBatchIds.add(batch.batchId);
+                  seen[batch.batchId] = true;
                 }
               });
-
-              result.push({
-                category: cat,
-                items: sortedItems,
-              });
             });
 
-            return result;
-          },
+            block.items.forEach(function (batch) {
+              if (!seen[batch.batchId]) {
+                sortedItems.push(batch);
+                seen[batch.batchId] = true;
+              }
+            });
+
+            result.push({
+              category: cat,
+              items: sortedItems,
+            });
+          });
+
+          return result;
         },
-        async mounted() {
-          // 載入資料
+      },
+      async mounted() {
+        try {
+          const r = await get('raw_items');
+          const o = await get('owned_photos');
+          const s = await get('series_images');
+          const so = await get('series_order');
+          if (r && Array.isArray(r)) this.rawItems = r;
+          if (o && Array.isArray(o)) this.ownedIds = new Set(o);
+          if (s && typeof s === 'object' && s) this.seriesImages = s;
+          if (so && typeof so === 'object' && so) this.seriesOrder = so;
+        } catch (e) {
+          console.error('載入資料錯誤：', e);
+        }
+
+        window.addEventListener('scroll', this.handleScroll, {
+          passive: true,
+        });
+      },
+      unmounted() {
+        window.removeEventListener('scroll', this.handleScroll);
+      },
+      methods: {
+        async saveData() {
           try {
-            const [r, o, s, so] = await Promise.all([
-              get("raw_items"),
-              get("owned_photos"),
-              get("series_images"),
-              get("series_order"),
-            ]);
-            if (r && Array.isArray(r)) this.rawItems = r;
-            if (o && Array.isArray(o)) this.ownedIds = new Set(o);
-            if (s && typeof s === "object" && s) this.seriesImages = s;
-            if (so && typeof so === "object") this.seriesOrder = so;
+            localStorage.setItem(
+              'sakura_txt',
+              JSON.stringify({
+                rawItems: this.rawItems,
+                ownedIds: Array.from(this.ownedIds),
+                seriesImages: this.seriesImages,
+                seriesOrder: this.seriesOrder,
+              })
+            );
           } catch (e) {
-            console.error("載入資料錯誤：", e);
+            console.error('localStorage 備份錯誤：', e);
           }
 
-          window.addEventListener("scroll", this.handleScroll, {
-            passive: true,
+          try {
+            await set('raw_items', this.rawItems);
+            await set('owned_photos', Array.from(this.ownedIds));
+            await set('series_images', this.seriesImages);
+            await set('series_order', this.seriesOrder);
+          } catch (e) {
+            console.error('儲存資料錯誤：', e);
+          }
+        },
+
+        importData(event) {
+          const file = event.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = async (e) => {
+            try {
+              const text = e.target.result;
+              const data = JSON.parse(text);
+
+              this.rawItems = Array.isArray(data.rawItems) ? data.rawItems : [];
+              this.ownedIds = new Set(
+                Array.isArray(data.ownedIds) ? data.ownedIds : []
+              );
+              this.seriesImages =
+                data.seriesImages && typeof data.seriesImages === 'object'
+                  ? data.seriesImages
+                  : {};
+              this.seriesOrder =
+                data.seriesOrder && typeof data.seriesOrder === 'object'
+                  ? data.seriesOrder
+                  : {};
+
+              await this.saveData();
+              alert('匯入完成！');
+            } catch (err) {
+              console.error('匯入失敗：', err);
+              alert('匯入失敗，檔案格式可能不正確。');
+            } finally {
+              event.target.value = '';
+            }
+          };
+          reader.readAsText(file);
+        },
+
+        onCategorySelect() {
+          if (this.selectedCategory !== 'custom_cat') {
+            this.newItem.category = this.selectedCategory;
+          }
+          this.selectedPreset = '';
+        },
+        onSeriesSelect() {
+          if (this.selectedPreset !== 'custom_series') {
+            this.newItem.series = this.selectedPreset;
+          }
+        },
+
+        getUniqueMemberCount(batches) {
+          return Array.from(
+            new Set(batches.map(function (b) { return b.memberName; }))
+          ).length;
+        },
+        getMemberOwnedCount(name) {
+          return this.rawItems.filter(
+            (i) => i.name === name && this.ownedIds.has(i.id)
+          ).length;
+        },
+        getProgress(items) {
+          return {
+            count: items.filter((i) => this.ownedIds.has(i.id)).length,
+          };
+        },
+        getActiveMembersInGen(gen) {
+          var self = this;
+          return this.presetMembers[gen].filter(function (name) {
+            return self.memberList.indexOf(name) !== -1;
           });
         },
-        unmounted() {
-          window.removeEventListener("scroll", this.handleScroll);
+        getGenActiveCount(gen) {
+          return this.getActiveMembersInGen(gen).length;
         },
-        methods: {
-          async saveData() {
-            try {
-              localStorage.setItem(
-                "sakura_txt",
-                JSON.stringify({
-                  rawItems: this.rawItems,
-                  ownedIds: [...this.ownedIds],
-                  seriesImages: this.seriesImages,
-                  seriesOrder: this.seriesOrder,
-                })
-              );
-            } catch (e) {
-              console.error("localStorage 備份錯誤：", e);
-            }
 
-            try {
-              await Promise.all([
-                set("raw_items", this.rawItems),
-                set("owned_photos", [...this.ownedIds]),
-                set("series_images", this.seriesImages),
-                set("series_order", this.seriesOrder),
-              ]);
-            } catch (e) {
-              console.error("儲存資料錯誤：", e);
-            }
-          },
+        toggleSeries(id) {
+          if (this.expandedSeries.has(id)) this.expandedSeries.delete(id);
+          else this.expandedSeries.add(id);
+        },
+        toggleSeriesMode(cat, sName) {
+          const key = cat + sName;
+          if (this.expandedSeriesMode.has(key))
+            this.expandedSeriesMode.delete(key);
+          else this.expandedSeriesMode.add(key);
+        },
+        toggleCategoryMember(cat) {
+          if (this.collapsedMemberCats.has(cat))
+            this.collapsedMemberCats.delete(cat);
+          else this.collapsedMemberCats.add(cat);
+        },
+        toggleCategorySeries(cat) {
+          if (this.collapsedSeriesCats.has(cat))
+            this.collapsedSeriesCats.delete(cat);
+          else this.collapsedSeriesCats.add(cat);
+        },
+        toggleMemberListCat(gen) {
+          if (this.collapsedMemberListCats.has(gen))
+            this.collapsedMemberListCats.delete(gen);
+          else this.collapsedMemberListCats.add(gen);
+        },
 
-          onCategorySelect() {
-            if (this.selectedCategory !== "custom_cat") {
-              this.newItem.category = this.selectedCategory;
-            }
-            this.selectedPreset = "";
-          },
-          onSeriesSelect() {
-            if (this.selectedPreset !== "custom_series") {
-              this.newItem.series = this.selectedPreset;
-            }
-          },
+        async toggleItem(id) {
+          if (this.ownedIds.has(id)) this.ownedIds.delete(id);
+          else this.ownedIds.add(id);
+          await this.saveData();
+        },
 
-          getUniqueMemberCount(batches) {
-            return [...new Set(batches.map((b) => b.memberName))].length;
-          },
-          getMemberOwnedCount(name) {
-            return this.rawItems.filter(
-              (i) => i.name === name && this.ownedIds.has(i.id)
-            ).length;
-          },
-          getProgress(items) {
-            return {
-              count: items.filter((i) => this.ownedIds.has(i.id)).length,
+        async removeSeries(bId) {
+          if (!confirm('確定刪除？')) return;
+          this.rawItems = this.rawItems.filter((i) => i.batchId !== bId);
+          delete this.seriesImages[bId];
+          await this.saveData();
+        },
+        async removeImage(bId) {
+          if (!confirm('刪除圖片？')) return;
+          delete this.seriesImages[bId];
+          await this.saveData();
+        },
+
+        async handleSeriesImageUpload(event, bId) {
+          const file = event.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = async () => {
+              const canvas = document.createElement('canvas');
+              const MAX_WIDTH = 800;
+              const ratio = MAX_WIDTH / img.width;
+              canvas.width = MAX_WIDTH;
+              canvas.height = img.height * ratio;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              this.seriesImages[bId] = canvas.toDataURL('image/jpeg', 0.5);
+              await this.saveData();
             };
-          },
-          getActiveMembersInGen(gen) {
-            return this.presetMembers[gen].filter((name) =>
-              this.memberList.includes(name)
-            );
-          },
-          getGenActiveCount(gen) {
-            return this.getActiveMembersInGen(gen).length;
-          },
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        },
 
-          toggleSeries(id) {
-            if (this.expandedSeries.has(id)) this.expandedSeries.delete(id);
-            else this.expandedSeries.add(id);
-          },
-          toggleSeriesMode(cat, sName) {
-            const key = cat + sName;
-            if (this.expandedSeriesMode.has(key))
-              this.expandedSeriesMode.delete(key);
-            else this.expandedSeriesMode.add(key);
-          },
-          toggleCategoryMember(cat) {
-            if (this.collapsedMemberCats.has(cat))
-              this.collapsedMemberCats.delete(cat);
-            else this.collapsedMemberCats.add(cat);
-          },
-          toggleCategorySeries(cat) {
-            if (this.collapsedSeriesCats.has(cat))
-              this.collapsedSeriesCats.delete(cat);
-            else this.collapsedSeriesCats.add(cat);
-          },
+        async addBatchItems() {
+          // 1. 先確認成員
+          const names =
+            this.addMode === 'member'
+              ? (this.newItem.name ? [this.newItem.name] : [])
+              : this.batchMemberNames;
 
-          async toggleItem(id) {
-            if (this.ownedIds.has(id)) this.ownedIds.delete(id);
-            else this.ownedIds.add(id);
-            await this.saveData();
-          },
+          if (!names.length) {
+            alert('請先選擇成員（或勾選至少一位成員）');
+            return;
+          }
 
-          async removeSeries(bId) {
-            if (!confirm("確定刪除？")) return;
-            this.rawItems = this.rawItems.filter((i) => i.batchId !== bId);
-            delete this.seriesImages[bId];
-            await this.saveData();
-          },
-          async removeImage(bId) {
-            if (!confirm("刪除圖片？")) return;
-            delete this.seriesImages[bId];
-            await this.saveData();
-          },
+          if (!this.newItem.category) {
+            alert('請先選擇「分類」');
+            return;
+          }
 
-          async handleSeriesImageUpload(event, bId) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              const img = new Image();
-              img.onload = async () => {
-                const canvas = document.createElement("canvas");
-                const MAX_WIDTH = 800;
-                const ratio = MAX_WIDTH / img.width;
-                canvas.width = MAX_WIDTH;
-                canvas.height = img.height * ratio;
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                this.seriesImages[bId] = canvas.toDataURL(
-                  "image/jpeg",
-                  0.5
-                );
-                await this.saveData();
-              };
-              img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-          },
+          if (!this.newItem.series) {
+            alert('請先選擇「系列」或輸入自訂系列名稱');
+            return;
+          }
 
-          async addBatchItems() {
-            const names =
-              this.addMode === "member"
-                ? this.newItem.name
-                  ? [this.newItem.name]
-                  : []
-                : this.batchMemberNames;
+          if (!this.seriesOrder[this.newItem.category]) {
+            this.seriesOrder[this.newItem.category] = [];
+          }
+          if (
+            this.seriesOrder[this.newItem.category].indexOf(this.newItem.series) === -1
+          ) {
+            this.seriesOrder[this.newItem.category].push(this.newItem.series);
+          }
 
-            if (!names.length || !this.newItem.series || !this.newItem.category)
-              return;
-
-            if (!this.seriesOrder[this.newItem.category]) {
-              this.seriesOrder[this.newItem.category] = [];
-            }
-            if (
-              !this.seriesOrder[this.newItem.category].includes(
-                this.newItem.series
-              )
-            ) {
-              this.seriesOrder[this.newItem.category].push(
-                this.newItem.series
-              );
-            }
-
-            names.forEach((name) => {
-              const bId =
-                "b-" +
-                Date.now() +
-                Math.random().toString(36).slice(2, 7);
-              ["ヨリ", "チュウ", "ヒキ", "座り"].forEach((type) => {
-                this.rawItems.push({
-                  id: Math.random().toString(36).slice(2, 11),
-                  batchId: bId,
-                  name,
-                  series: this.newItem.series,
-                  category: this.newItem.category,
-                  type,
-                });
+          const self = this;
+          names.forEach(function (name) {
+            const bId =
+              'b-' + Date.now() + Math.random().toString(36).slice(2, 7);
+            ['ヨリ', 'チュウ', 'ヒキ', '座り'].forEach(function (type) {
+              self.rawItems.push({
+                id: Math.random().toString(36).slice(2, 11),
+                batchId: bId,
+                name: name,
+                series: self.newItem.series,
+                category: self.newItem.category,
+                type: type,
               });
             });
+          });
 
-            await this.saveData();
-            this.showInput = false;
-            this.batchMemberNames = [];
+          await this.saveData();
+          this.showInput = false;
+          this.batchMemberNames = [];
 
-            if (this.addMode === "member" && names.length === 1) {
-              this.currentMember = names[0];
-            }
-          },
-
-          async exportData() {
-            const data = {
-              rawItems: this.rawItems,
-              ownedIds: [...this.ownedIds],
-              seriesImages: this.seriesImages,
-              seriesOrder: this.seriesOrder,
-            };
-            const blob = new Blob([JSON.stringify(data)], {
-              type: "text/plain",
-            });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = "sakura_backup.txt";
-            a.click();
-          },
-
-          async clearAll() {
-            if (!confirm("清空所有資料？")) return;
-            try {
-              await clear();
-            } catch (e) {
-              console.error("清空儲存失敗：", e);
-            }
-            localStorage.removeItem("sakura_txt");
-            location.reload();
-          },
-
-          handleScroll() {
-            const y = window.scrollY || window.pageYOffset || 0;
-            this.scrollY = y;
-            this.showScrollTop =
-              y > 300 && this.viewMode === "series" && !this.currentMember;
-          },
-          scrollToTop() {
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          },
+          if (this.addMode === 'member' && names.length === 1) {
+            this.currentMember = names[0];
+          }
         },
-      }).mount("#app");
-    })();
+
+        async exportData() {
+          const data = {
+            rawItems: this.rawItems,
+            ownedIds: Array.from(this.ownedIds),
+            seriesImages: this.seriesImages,
+            seriesOrder: this.seriesOrder,
+          };
+          const blob = new Blob([JSON.stringify(data)], {
+            type: 'text/plain',
+          });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = 'sakura_backup.txt';
+          a.click();
+        },
+
+        async clearAll() {
+          if (!confirm('清空所有資料？')) return;
+          try {
+            await clear();
+          } catch (e) {
+            console.error('清空儲存失敗：', e);
+          }
+          localStorage.removeItem('sakura_txt');
+          location.reload();
+        },
+
+        handleScroll() {
+          const y =
+            window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+          this.scrollY = y;
+          this.showScrollTop =
+            y > 300 && this.viewMode === 'series' && !this.currentMember;
+        },
+        scrollToTop() {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+      },
+    }).mount('#app');
   </script>
 </body>
 </html>
