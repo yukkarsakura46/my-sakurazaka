@@ -356,7 +356,7 @@
             <h2 class="section-header" @click="toggleMemberListCat(g)">
               <span>{{ g }}</span>
               <span class="text-[10px] text-slate-400">
-                {{ getGenActiveCount(g) }} Members
+                {{ getGenActiveCount(g) === 1 ? '1 Member' : getGenActiveCount(g) + ' Members' }}
                 <span class="ml-1">
                   {{ collapsedMemberListCats.has(g) ? '▼' : '▲' }}
                 </span>
@@ -463,7 +463,10 @@
                   </span>
                 </div>
                 <div class="text-[9px] font-bold text-pink-400 shrink-0">
-                  {{ getUniqueMemberCount(batches) }} Members
+                  {{ getUniqueMemberCount(batches) === 1
+      ? '1 Member'
+      : getUniqueMemberCount(batches) + ' Members'
+ }}
                 </div>
               </div>
 
