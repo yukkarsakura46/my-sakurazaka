@@ -804,7 +804,7 @@
   </div>
 
   <script>
-    const { createApp } = Vue;
+    const { createApp, nextTick } = Vue;
 
     function createStorage() {
       if (!("indexedDB" in window)) {
@@ -1447,68 +1447,105 @@
           reader.readAsDataURL(file);
         },
         async addBatchItems() {
-          const names =
-            this.addMode === "member"
-              ? this.newItem.name
-                ? [this.newItem.name]
-                : []
-              : this.batchMemberNames.slice();
+  // 1. 依模式決定要新增哪些成員
+  const names =
+    this.addMode === "member"
+      ? this.newItem.name
+        ? [this.newItem.name]
+        : []
+      : this.batchMemberNames.slice(); // 多選成員複製一份
 
-          if (!names.length) {
-            alert("請先選擇成員（或勾選至少一位成員）");
-            return;
-          }
-          if (!this.newItem.category) {
-            alert("請先選擇「分類」");
-            return;
-          }
-          if (!this.newItem.series) {
-            alert("請先選擇「系列」或輸入自訂系列名稱");
-            return;
-          }
+  if (!names.length) {
+    alert("請先選擇成員（或勾選至少一位成員）");
+    return;
+  }
+  if (!this.newItem.category) {
+    alert("請先選擇「分類」");
+    return;
+  }
+  if (!this.newItem.series) {
+    alert("請先選擇「系列」或輸入自訂系列名稱");
+    return;
+  }
 
-          if (!this.seriesOrder[this.newItem.category]) {
-            this.seriesOrder[this.newItem.category] = [];
-          }
-          if (
-            this.seriesOrder[this.newItem.category].indexOf(
-              this.newItem.series
-            ) === -1
-          ) {
-            this.seriesOrder[this.newItem.category].push(this.newItem.series);
-          }
+  // 2. 記錄系列順序（自訂排序用）
+  if (!this.seriesOrder[this.newItem.category]) {
+    this.seriesOrder[this.newItem.category] = [];
+  }
+  if (
+    this.seriesOrder[this.newItem.category].indexOf(
+      this.newItem.series
+    ) === -1
+  ) {
+    this.seriesOrder[this.newItem.category].push(this.newItem.series);
+  }
 
-          const self = this;
-          names.forEach(function (name) {
-  const bId =
-    "b-" + Date.now() + Math.random().toString(36).slice(2, 7);
+  // 3. 實際新增 rawItems（支援 4 張 / 單張模式）
+  const self = this;
+  let lastBatchId = null;
 
-  // 🔽 依勾選狀態決定此系列有幾張
-  const types = self.singleSlotMode
-    ? ["Special"] // 單張系列
-    : ["ヨリ", "チュウ", "ヒキ", "座り"]; // 一般 4 張
+  names.forEach(function (name) {
+    const bId =
+      "b-" + Date.now() + Math.random().toString(36).slice(2, 7);
+    lastBatchId = bId;
 
-  types.forEach(function (type) {
-    self.rawItems.push({
-      id: Math.random().toString(36).slice(2, 11),
-      batchId: bId,
-      name: name,
-      series: self.newItem.series,
-      category: self.newItem.category,
-      type: type,
+    const types = self.singleSlotMode
+      ? ["Special"] // 單張系列
+      : ["ヨリ", "チュウ", "ヒキ", "座り"]; // 一般 4 張
+
+    types.forEach(function (type) {
+      self.rawItems.push({
+        id: Math.random().toString(36).slice(2, 11),
+        batchId: bId,
+        name: name,
+        series: self.newItem.series,
+        category: self.newItem.category,
+        type: type,
+      });
     });
   });
-});
 
-          await this.saveData();
-          this.showInput = false;
-          this.batchMemberNames = [];
+  // 4. 存檔＋關閉面板
+  await this.saveData();
+  this.showInput = false;
+  this.batchMemberNames = [];
 
-          if (this.addMode === "member" && names.length === 1) {
-            this.currentMember = names[0];
-          }
-this.singleSlotMode = false;
-        },
+  const cat = this.newItem.category;
+  const seriesName = this.newItem.series;
+
+  // 5. 新增完的行為：依新增模式做跳轉
+
+  if (this.addMode === "member" && names.length === 1 && lastBatchId) {
+    // ➤ 成員模式：跳到該成員頁，展開新系列並捲動到中間
+    this.currentMember = names[0];
+    this.collapsedMemberCats.delete(cat); // 確保分類是展開狀態
+
+    await nextTick(); // 等 DOM 更新
+    this.expandedSeries.add(lastBatchId);
+
+    const el = document.getElementById("batch-target-" + lastBatchId);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  } else if (this.addMode === "series") {
+    // ➤ 系列模式：切到系列模式，展開該系列並捲動
+    this.viewMode = "series";
+    this.currentMember = null;
+    this.collapsedSeriesCats.delete(cat); // 確保分類展開
+
+    await nextTick(); // 等列表渲染完成
+    this.expandedSeriesMode.add(cat + seriesName);
+
+    const el = document.getElementById("series-target-" + seriesName);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }
+
+  // 6. 重置「單張模式」開關（避免下一次忘了關）
+  this.singleSlotMode = false;
+},
+
         async exportData() {
           const data = {
             rawItems: this.rawItems,
