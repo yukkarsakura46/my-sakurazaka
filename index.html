@@ -290,6 +290,16 @@
             class="w-full border p-2.5 rounded-xl"
           />
 
+<!-- 🔽 新增：單張系列開關 -->
+<label class="flex items-center text-[10px] text-slate-500 mt-1">
+  <input
+    type="checkbox"
+    v-model="singleSlotMode"
+    class="mr-2 accent-pink-500"
+  />
+  此系列只有 1 張（特殊系列）
+</label>
+
           <button
             @click="addBatchItems"
             class="w-full bg-pink-500 text-white p-3 rounded-xl font-bold shadow-lg"
@@ -497,20 +507,21 @@
                     </div>
                   </div>
 
-                  <div
-                    class="text-[9px] font-black text-right w-[40px] shrink-0"
-                    :class="
-                      getProgress(b.items).count === 4
-                        ? 'text-green-500'
-                        : 'text-pink-400'
-                    "
-                  >
-                    {{
-                      getProgress(b.items).count === 4
-                        ? 'Complete'
-                        : getProgress(b.items).count + '/4'
-                    }}
-                  </div>
+                 <div
+  class="text-[9px] font-black text-right w-[40px] shrink-0"
+  :class="
+    getProgress(b.items).count === b.items.length
+      ? 'text-green-500'
+      : 'text-pink-400'
+  "
+>
+  {{
+    getProgress(b.items).count === b.items.length
+      ? 'Complete'
+      : getProgress(b.items).count + '/' + b.items.length
+  }}
+</div>
+
                 </div>
               </div>
             </div>
@@ -624,20 +635,21 @@
 
                 <div class="flex items-center gap-2">
                   <span
-                    class="text-[9px] font-black"
-                    :class="
-                      getProgress(batch.items).count === 4
-                        ? 'text-green-500'
-                        : 'text-pink-400'
-                    "
-                    @click.stop
-                  >
-                    {{
-                      getProgress(batch.items).count === 4
-                        ? 'Complete'
-                        : getProgress(batch.items).count + '/4'
-                    }}
-                  </span>
+  class="text-[9px] font-black"
+  :class="
+    getProgress(batch.items).count === batch.items.length
+      ? 'text-green-500'
+      : 'text-pink-400'
+  "
+  @click.stop
+>
+  {{
+    getProgress(batch.items).count === batch.items.length
+      ? 'Complete'
+      : getProgress(batch.items).count + '/' + batch.items.length
+  }}
+</span>
+
                   <button
                     @click.stop="removeSeries(batch.batchId)"
                     class="text-red-200"
@@ -951,6 +963,7 @@
           collapsedMemberListCats: new Set(),
 
           zoomedImg: null,
+          singleSlotMode: false,
         };
       },
       computed: {
@@ -1467,19 +1480,25 @@
 
           const self = this;
           names.forEach(function (name) {
-            const bId =
-              "b-" + Date.now() + Math.random().toString(36).slice(2, 7);
-            ["ヨリ", "チュウ", "ヒキ", "座り"].forEach(function (type) {
-              self.rawItems.push({
-                id: Math.random().toString(36).slice(2, 11),
-                batchId: bId,
-                name: name,
-                series: self.newItem.series,
-                category: self.newItem.category,
-                type: type,
-              });
-            });
-          });
+  const bId =
+    "b-" + Date.now() + Math.random().toString(36).slice(2, 7);
+
+  // 🔽 依勾選狀態決定此系列有幾張
+  const types = self.singleSlotMode
+    ? ["Special"] // 單張系列
+    : ["ヨリ", "チュウ", "ヒキ", "座り"]; // 一般 4 張
+
+  types.forEach(function (type) {
+    self.rawItems.push({
+      id: Math.random().toString(36).slice(2, 11),
+      batchId: bId,
+      name: name,
+      series: self.newItem.series,
+      category: self.newItem.category,
+      type: type,
+    });
+  });
+});
 
           await this.saveData();
           this.showInput = false;
@@ -1488,6 +1507,7 @@
           if (this.addMode === "member" && names.length === 1) {
             this.currentMember = names[0];
           }
+this.singleSlotMode = false;
         },
         async exportData() {
           const data = {
