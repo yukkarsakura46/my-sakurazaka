@@ -1,1591 +1,251 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  />
-  <title>🌸 櫻坂46 Collection</title>
-  <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.prod.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    * {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC",
-        sans-serif !important;
-      text-transform: none !important;
-      box-sizing: border-box;
-    }
-    [v-cloak] { display: none; }
+    <meta charset="UTF-8">
+    <title>Sakurazaka46 紀錄產生器 V5 - Pro Layout</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root { --sakura-pink: #f4b4d0; --text-gray: #8e8e93; --nick-green: #2ecc71; }
+        body { font-family: -apple-system, "Helvetica Neue", sans-serif; background: #d1d1d6; display: flex; padding: 20px; gap: 20px; justify-content: center; }
+        
+        /* 控制面板 */
+        .controls { width: 340px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); height: 95vh; overflow-y: auto; font-size: 14px; }
+        .controls h2 { margin: 0 0 15px 0; font-size: 1.1rem; border-left: 4px solid var(--sakura-pink); padding-left: 10px; }
+        .input-group { margin-bottom: 12px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        
+        .btn-area { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
+        button { cursor: pointer; padding: 10px; border: none; border-radius: 8px; font-weight: bold; transition: 0.2s; }
+        .btn-member { background: #fff; color: #333; border: 1px solid #ddd; }
+        .btn-fan { background: #efefef; color: #333; }
+        .btn-save { background: #333; color: white; margin-top: 10px; }
+        .btn-storage { background: #3498db; color: white; }
 
-    .photo-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 5px;
-      width: 100%;
-    }
-    .series-photo-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 4px;
-      width: 100%;
-      max-width: 170px;
-    }
-    .item-slot {
-      aspect-ratio: 2 / 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      font-size: 10px;
-      font-weight: 800;
-      transition: all 0.2s;
-    }
-    .section-header {
-      font-size: 12px;
-      font-weight: 900;
-      color: #64748b;
-      margin: 22px 0 8px 4px;
-      border-left: 3px solid #f472b6;
-      padding-left: 8px;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-    }
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(4px);
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .group-tag {
-      font-size: 8px;
-      background: #fee2e2;
-      color: #ef4444;
-      padding: 1px 4px;
-      border-radius: 4px;
-      margin-left: 5px;
-      font-weight: bold;
-    }
-    .tab-btn {
-      font-size: 11px;
-      font-weight: 900;
-      padding: 6px 16px;
-      border-radius: 99px;
-    }
-    .tab-active {
-      background: #f472b6;
-      color: white;
-    }
-  </style>
+        /* 預覽區核心 */
+        #capture-area { 
+            width: 450px; background: white; min-height: 800px; padding: 40px 30px; 
+            position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column;
+        }
+        #bg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.1; z-index: 0; background-size: cover; pointer-events: none; }
+        .content-layer { position: relative; z-index: 1; flex-grow: 1; }
+
+        /* 頂部資訊：全部置中 */
+        .header-center { text-align: center; margin-bottom: 30px; position: relative; padding-bottom: 20px; border-bottom: 1px solid #f2f2f7; }
+        .header-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header-name { font-size: 28px; font-weight: bold; color: #000; margin: 0; }
+        .header-date { font-size: 14px; color: var(--text-gray); margin-top: 4px; }
+        .header-nick { font-size: 20px; font-weight: bold; color: var(--nick-green); margin-top: 8px; }
+
+        /* 部數資訊：縮小移至右下角 */
+        .status-corner { position: absolute; right: 0; bottom: 5px; display: flex; gap: 10px; font-size: 12px; color: var(--text-gray); }
+        .status-corner span { display: flex; align-items: center; gap: 3px; }
+
+        /* 對話樣式 */
+        .chat-list { display: flex; flex-direction: column; gap: 10px; }
+        .chat-item { display: flex; align-items: flex-start; position: relative; max-width: 90%; }
+        .item-member { align-self: flex-start; }
+        .item-fan { align-self: flex-end; flex-direction: row-reverse; }
+        
+        .chat-avatar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .item-member .chat-avatar { margin-right: 12px; }
+        .item-fan .chat-avatar { margin-left: 12px; }
+
+        .bubble { padding: 10px 16px; font-size: 15px; line-height: 1.5; border-radius: 18px; }
+        .item-member .bubble { background: #fff; border: 1px solid #efeff4; border-top-left-radius: 4px; }
+        .item-fan .bubble { background: #efefef; border-top-right-radius: 4px; }
+        
+        .no-avatar { margin-left: 57px; }
+        .item-fan.no-avatar { margin-right: 57px; margin-left: 0; }
+
+        .narration { text-align: center; color: #bbb; font-size: 13px; margin: 15px 0; font-style: italic; }
+        .delete-btn { position: absolute; left: -25px; top: 12px; color: #ff3b30; cursor: pointer; font-weight: bold; display: none; }
+        .chat-item:hover .delete-btn { display: block; }
+    </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
-  <div id="app" v-cloak>
-    <!-- NAV -->
-    <nav
-      class="bg-white shadow-sm p-4 sticky top-0 z-30 flex justify-between items-center border-b"
-    >
-      <h1
-        class="text-xl font-black text-gray-800 cursor-pointer"
-        @click="
-          currentMember = null;
-          viewMode = 'member';
-        "
-      >
-        🌸 櫻坂46
-      </h1>
-      <button
-        @click="showInput = true"
-        class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold shadow-lg"
-      >
-        管理面板
-      </button>
-    </nav>
+<body>
 
-    <!-- 管理面板 -->
-    <div v-if="showInput" class="modal-overlay" @click.self="showInput = false">
-      <div
-        class="bg-white w-full max-w-sm p-6 rounded-3xl shadow-2xl border-t-4 border-pink-400 relative overflow-y-auto max-h-[90vh]"
-      >
-        <button
-          @click="showInput = false"
-          class="absolute top-4 right-4 text-gray-300 font-bold"
-        >
-          ✕
-        </button>
-        <h3 class="text-base font-black text-gray-800 mb-4">資料管理</h3>
-
-        <div class="flex bg-slate-100 p-1 rounded-xl mb-4 text-[10px] font-bold">
-          <button
-            @click="addMode = 'member'"
-            class="flex-1 py-2 rounded-lg"
-            :class="addMode === 'member' ? 'bg-white shadow text-pink-500' : ''"
-          >
-            按成員
-          </button>
-          <button
-            @click="addMode = 'series'"
-            class="flex-1 py-2 rounded-lg"
-            :class="addMode === 'series' ? 'bg-white shadow text-pink-500' : ''"
-          >
-            按系列
-          </button>
-        </div>
-
-        <div class="space-y-3 text-xs text-gray-700">
-          <!-- 按成員新增 -->
-          <template v-if="addMode === 'member'">
-            <select
-              v-model="selectedGen"
-              class="w-full border p-2.5 rounded-xl bg-white font-bold"
-            >
-              <option value="">-- 期別 --</option>
-              <option v-for="(ms, g) in presetMembers" :key="g" :value="g">
-                {{ g }}
-              </option>
-            </select>
-
-            <select
-              v-if="selectedGen"
-              v-model="newItem.name"
-              class="w-full border p-2.5 rounded-xl bg-white font-bold"
-            >
-              <option
-                v-for="n in presetMembers[selectedGen]"
-                :key="n"
-                :value="n"
-              >
-                {{ n }}
-              </option>
-            </select>
-
-            <select
-              v-model="selectedCategory"
-              @change="onCategorySelect"
-              class="w-full border p-2.5 rounded-xl bg-white"
-            >
-              <option value="">-- 分類 --</option>
-              <option
-                v-for="(list, cat) in categorizedSeries"
-                :key="cat"
-                :value="cat"
-              >
-                {{ cat }}
-              </option>
-              <option value="custom_cat">＋ 自定義</option>
-            </select>
-
-            <select
-              v-if="selectedCategory"
-              v-model="selectedPreset"
-              @change="onSeriesSelect"
-              class="w-full border p-2.5 rounded-xl bg-white"
-            >
-              <option value="">-- 系列 --</option>
-              <option
-                v-for="s in categorizedSeries[selectedCategory] || []"
-                :key="s"
-                :value="s"
-              >
-                {{ s }}
-              </option>
-              <option value="custom_series">＋ 手動輸入</option>
-            </select>
-          </template>
-
-          <!-- 按系列新增（多成員） -->
-          <template v-else>
-            <select
-              v-model="selectedCategory"
-              @change="onCategorySelect"
-              class="w-full border p-2.5 rounded-xl bg-white"
-            >
-              <option value="">-- 分類 --</option>
-              <option
-                v-for="(list, cat) in categorizedSeries"
-                :key="cat"
-                :value="cat"
-              >
-                {{ cat }}
-              </option>
-            </select>
-
-            <select
-              v-if="selectedCategory"
-              v-model="selectedPreset"
-              @change="onSeriesSelect"
-              class="w-full border p-2.5 rounded-xl bg-white"
-            >
-              <option value="">-- 系列 --</option>
-              <option
-                v-for="s in categorizedSeries[selectedCategory] || []"
-                :key="s"
-                :value="s"
-              >
-                {{ s }}
-              </option>
-            </select>
-
-            <select
-              v-if="selectedPreset"
-              v-model="selectedGen"
-              class="w-full border p-2.5 rounded-xl bg-white font-bold"
-            >
-              <option value="">-- 期別 --</option>
-              <option
-                v-for="(ms, g) in presetMembers"
-                :key="g"
-                :value="g"
-              >
-                {{ g }}
-              </option>
-            </select>
-
-            <div
-              v-if="selectedGen && selectedPreset"
-              class="border rounded-xl p-3 bg-slate-50 max-h-40 overflow-y-auto"
-            >
-              <label
-                v-for="n in presetMembers[selectedGen]"
-                :key="n"
-                class="flex items-center mb-1"
-              >
-                <input
-                  type="checkbox"
-                  :value="n"
-                  v-model="batchMemberNames"
-                  class="mr-2 accent-pink-500"
-                />
-                <span>{{ n }}</span>
-              </label>
-            </div>
-          </template>
-
-          <!-- 自定義分類 / 系列 -->
-          <input
-            v-if="selectedCategory === 'custom_cat'"
-            v-model="newItem.category"
-            type="text"
-            placeholder="手動分類"
-            class="w-full border p-2.5 rounded-xl"
-          />
-          <input
-            v-if="
-              selectedPreset === 'custom_series' ||
-              selectedCategory === 'custom_cat'
-            "
-            v-model="newItem.series"
-            type="text"
-            placeholder="手動系列"
-            class="w-full border p-2.5 rounded-xl"
-          />
-
-<!-- 🔽 新增：單張系列開關 -->
-<label class="flex items-center text-[10px] text-slate-500 mt-1">
-  <input
-    type="checkbox"
-    v-model="singleSlotMode"
-    class="mr-2 accent-pink-500"
-  />
-  此系列只有 1 張（特殊系列）
-</label>
-
-          <button
-            @click="addBatchItems"
-            class="w-full bg-pink-500 text-white p-3 rounded-xl font-bold shadow-lg"
-          >
-            確認新增
-          </button>
-        </div>
-
-        <!-- 匯出 / 匯入 / 清空 -->
-        <div
-          class="flex justify-center gap-4 mt-8 border-t pt-4 text-xs items-center"
-        >
-          <button @click="exportData" class="text-blue-500 font-bold">
-            匯出備份
-          </button>
-
-          <button
-            @click="$refs.importFile.click()"
-            class="text-emerald-500 font-bold"
-          >
-            匯入還原
-          </button>
-
-          <button @click="clearAll" class="text-red-300 font-bold">
-            清空
-          </button>
-
-          <input
-            type="file"
-            ref="importFile"
-            class="hidden"
-            accept=".txt,.json"
-            @change="importData"
-          />
-        </div>
-      </div>
+<div class="controls">
+    <h2>⚙️ 介面與內容設定</h2>
+    <div class="input-group">
+        <label>成員姓名</label>
+        <input type="text" id="input-name" value="石森璃花" oninput="updateUI()">
+    </div>
+    <div class="input-group">
+        <label>你的暱稱 (顯示為綠色字體)</label>
+        <input type="text" id="input-nick" value="CoCo" oninput="updateUI()">
+    </div>
+    <div class="input-group">
+        <label>日期</label>
+        <input type="date" id="input-date" value="2026/01/10" oninput="updateUI()">
+    </div>
+    
+    <div style="display: flex; gap: 5px;">
+        <div class="input-group"><label>部數</label><input type="text" id="input-part" value="第3部" oninput="updateUI()"></div>
+        <div class="input-group"><label>枚數</label><input type="number" id="input-cards" value="3" oninput="updateUI()"></div>
+        <div class="input-group"><label>秒數</label><input type="number" id="input-seconds" value="30" oninput="updateUI()"></div>
     </div>
 
-    <!-- 內容區 -->
-    <main class="max-w-xl mx-auto p-3">
-      <!-- Tabs -->
-      <div
-        v-if="!currentMember"
-        class="flex justify-center items-center gap-4 my-4"
-      >
-        <button
-          @click="
-            viewMode = 'member';
-            expandedSeriesMode.clear();
-          "
-          class="tab-btn"
-          :class="viewMode === 'member' ? 'tab-active' : 'text-slate-400'"
-        >
-          成員模式
-        </button>
-        <button
-          @click="
-            viewMode = 'series';
-            currentMember = null;
-            expandedSeriesMode.clear();
-          "
-          class="tab-btn"
-          :class="viewMode === 'series' ? 'tab-active' : 'text-slate-400'"
-        >
-          系列模式
-        </button>
-      </div>
+    <hr>
+    <div class="btn-area">
+        <button class="btn-storage" onclick="saveToLocal()">💾 儲存當前草稿</button>
+        <button class="btn-storage" style="background:#95a5a6;" onclick="loadFromLocal()">📂 讀取上次存檔</button>
+    </div>
 
-      <!-- 成員模式：成員列表 -->
-      <div v-if="!currentMember && viewMode === 'member'">
-        <div v-for="(ms, g) in presetMembers" :key="g">
-          <div v-if="getActiveMembersInGen(g).length > 0">
-            <h2 class="section-header" @click="toggleMemberListCat(g)">
-              <span>{{ g }}</span>
-              <span class="text-[10px] text-slate-400">
-                {{
-                  getGenActiveCount(g) === 1
-                    ? '1 Member'
-                    : getGenActiveCount(g) + ' Members'
-                }}
-                <span class="ml-1">
-                  {{ collapsedMemberListCats.has(g) ? '▼' : '▲' }}
-                </span>
-              </span>
-            </h2>
+    <hr>
+    <div class="input-group"><label>頭像/背景 (選完後會自動載入)</label>
+        <input type="file" id="up-member" onchange="previewFile('member')" style="margin-bottom:5px;">
+        <input type="file" id="up-fan" onchange="previewFile('fan')" style="margin-bottom:5px;">
+        <input type="file" id="up-bg" onchange="previewFile('bg')">
+    </div>
 
-            <div
-              v-if="!collapsedMemberListCats.has(g)"
-              class="grid grid-cols-2 gap-3"
-            >
-              <div
-                v-for="name in getActiveMembersInGen(g)"
-                :key="name"
-                @click="currentMember = name"
-                class="bg-white p-5 rounded-2xl shadow-sm text-center cursor-pointer"
-              >
-                <div class="font-black text-gray-700">{{ name }}</div>
-                <div class="text-[8px] font-bold text-pink-400">
-                  {{ getMemberOwnedCount(name) }} Collected
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          v-if="memberList.length === 0"
-          class="text-center py-24 text-slate-300 font-bold italic"
-        >
-          目前尚無收藏資料
-        </div>
-      </div>
-
-      <!-- 系列模式 -->
-      <div v-if="!currentMember && viewMode === 'series'">
-        <!-- 篩選按鈕（開啟 modal） -->
-        <div class="flex justify-end mb-3 px-1">
-          <button
-            @click="showSeriesFilter = true"
-            class="text-[10px] font-bold px-4 py-1.5 rounded-full
-                   border border-slate-300 bg-white text-slate-600
-                   shadow-sm active:scale-95 transition"
-          >
-            篩選
-            <span v-if="seriesMemberFilter.size">
-              （{{ seriesMemberFilter.size }}）
-            </span>
-          </button>
-        </div>
-
-        <div v-for="(seriesObj, catName) in itemsBySeriesSorted" :key="catName">
-          <h2 class="section-header" @click="toggleCategorySeries(catName)">
-            <span>{{ catName }}</span>
-            <span class="text-[10px] text-slate-400">
-              {{ Object.keys(seriesObj).length }} 系列
-              <span class="ml-1">
-                {{ collapsedSeriesCats.has(catName) ? '▼' : '▲' }}
-              </span>
-            </span>
-          </h2>
-
-          <div v-if="!collapsedSeriesCats.has(catName)">
-            <div
-              v-for="(batches, seriesName) in seriesObj"
-              :key="seriesName"
-              :id="'series-target-' + seriesName"
-              class="mb-2 bg-white rounded-2xl shadow-sm border overflow-hidden"
-            >
-              <div
-                @click="toggleSeriesMode(catName, seriesName)"
-                class="px-4 py-3 flex justify-between items-center cursor-pointer"
-              >
-                <div class="flex items-center min-w-0">
-                  <span
-                    class="font-black text-gray-600 text-[10px] truncate max-w-full"
-                    :title="seriesName"
-                  >
-                    {{ seriesName }}
-                  </span>
-                </div>
-                <div class="text-[9px] font-bold text-pink-400 shrink-0">
-                  {{
-                    getUniqueMemberCount(batches) === 1
-                      ? '1 Member'
-                      : getUniqueMemberCount(batches) + ' Members'
-                  }}
-                </div>
-              </div>
-
-              <div
-                v-if="expandedSeriesMode.has(catName + seriesName)"
-                class="p-3 border-t bg-slate-50/50 space-y-3"
-              >
-                <div
-                  v-for="b in batches"
-                  :key="b.batchId"
-                  class="flex items-center gap-4 py-2 border-b border-gray-50 last:border-0"
-                >
-                  <div
-                    @click="currentMember = b.memberName"
-                    class="text-[11px] font-bold cursor-pointer flex items-center min-w-[90px] max-w-[90px]"
-                  >
-                    <span class="truncate">{{ b.memberName }}</span>
-                    <span
-                      v-if="b.totalSets > 1"
-                      class="group-tag ml-1 shrink-0"
-                    >
-                      SET {{ b.groupIndex }}
-                    </span>
-                  </div>
-
-                  <div class="series-photo-grid w-[170px] shrink-0">
-                    <div
-                      v-for="item in b.items"
-                      :key="item.id"
-                      @click="toggleItem(item.id)"
-                      class="item-slot border cursor-pointer"
-                      :class="
-                        ownedIds.has(item.id)
-                          ? 'bg-pink-500 border-pink-500 text-white'
-                          : 'bg-white text-gray-200'
-                      "
-                    >
-                      {{ item.type }}
-                    </div>
-                  </div>
-
-                 <div
-  class="text-[9px] font-black text-right w-[40px] shrink-0"
-  :class="
-    getProgress(b.items).count === b.items.length
-      ? 'text-green-500'
-      : 'text-pink-400'
-  "
->
-  {{
-    getProgress(b.items).count === b.items.length
-      ? 'Complete'
-      : getProgress(b.items).count + '/' + b.items.length
-  }}
+    <hr>
+    <div class="input-group"><label>輸入對話文字</label><textarea id="input-msg" rows="3"></textarea></div>
+    <div class="btn-area">
+        <button class="btn-member" onclick="addChat('member')">+ 成員發言</button>
+        <button class="btn-fan" onclick="addChat('fan')">+ 我發言</button>
+        <button style="background:#eee;" onclick="addChat('note')">+ 加入筆記</button>
+        <button class="btn-save" onclick="saveImage()">📸 導出高清不壓縮截圖</button>
+    </div>
 </div>
 
-                </div>
-              </div>
+<div id="capture-area">
+    <div id="bg-overlay"></div>
+    <div class="content-layer">
+        <div class="header-center">
+            <img src="https://via.placeholder.com/150" id="prev-img-member" class="header-avatar">
+            <div id="prev-name" class="header-name">石森璃花</div>
+            <div id="prev-date" class="header-date">2026/01/10</div>
+            <div style="font-size: 12px; color: #333; margin-top: 10px;">👤 ニックネーム</div>
+            <div id="prev-nick" class="header-nick">CoCo</div>
+            
+            <div class="status-corner">
+                <span id="prev-part">第3部</span>
+                <span>🎫<span id="prev-cards">3</span></span>
+                <span>⏱️<span id="prev-seconds">30</span></span>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 成員詳細頁 -->
-      <div v-if="currentMember">
-        <!-- 成員名稱列 -->
-        <div class="flex items-center justify-between mb-3 px-1">
-          <div class="flex items-center gap-2">
-            <button
-              @click="currentMember = null"
-              class="text-gray-300 font-bold text-2xl px-2"
-            >
-              ‹
-            </button>
-            <div class="relative">
-              <select
-                v-model="currentMember"
-                class="appearance-none bg-transparent font-black text-2xl outline-none pr-8 cursor-pointer"
-              >
-                <optgroup
-                  v-for="(names, gen) in presetMembers"
-                  :key="gen"
-                  :label="gen"
-                >
-                  <option
-                    v-for="name in getActiveMembersInGen(gen)"
-                    :key="name"
-                    :value="name"
-                  >
-                    {{ name }}
-                  </option>
-                </optgroup>
-              </select>
-              <div
-                class="pointer-events-none absolute inset-y-0 right-0 flex items-center text-pink-500"
-              >
-                ▼
-              </div>
-            </div>
-          </div>
         </div>
 
-        <!-- 成員總進度條 -->
-        <div v-if="currentMemberStats" class="px-1 mb-5 text-[11px]">
-          <div class="flex justify-between mb-1">
-            <span class="font-bold text-slate-600">
-              {{ currentMemberStats.ownedSlots }} /
-              {{ currentMemberStats.totalSlots }} 張
-            </span>
-            <span class="text-slate-400">
-              完成 {{ currentMemberStats.completedBatches }} /
-              {{ currentMemberStats.totalBatches }} 系列
-            </span>
-          </div>
-          <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
-            <div
-              class="h-full bg-pink-500 transition-all"
-              :style="{ width: currentMemberStats.percent + '%' }"
-            ></div>
-          </div>
-        </div>
-
-        <!-- 各分類區塊 -->
-        <div
-          v-for="catBlock in memberItemsGrouped"
-          :key="catBlock.category"
-          class="mb-8"
-        >
-          <h2
-            class="section-header"
-            @click="toggleCategoryMember(catBlock.category)"
-          >
-            <span>{{ catBlock.category }}</span>
-            <span class="text-[10px] text-slate-400">
-              {{ catBlock.items.length }} 系列
-              <span class="ml-1">
-                {{ collapsedMemberCats.has(catBlock.category) ? '▼' : '▲' }}
-              </span>
-            </span>
-          </h2>
-
-          <div v-if="!collapsedMemberCats.has(catBlock.category)">
-            <div
-              v-for="batch in catBlock.items"
-              :key="batch.batchId"
-              :id="'batch-target-' + batch.batchId"
-              class="mb-2.5 bg-white rounded-xl shadow-sm border overflow-hidden"
-            >
-              <div
-                class="p-4 flex justify-between items-center cursor-pointer"
-                @click="toggleSeries(batch.batchId)"
-              >
-                <div class="flex items-center min-w-0">
-                  <span
-                    class="font-bold text-xs text-gray-700 truncate max-w-full"
-                    :title="batch.seriesName"
-                  >
-                    {{ batch.seriesName }}
-                  </span>
-                  <span
-                    v-if="batch.totalSets > 1"
-                    class="group-tag ml-1 shrink-0"
-                  >
-                    SET {{ batch.groupIndex }}
-                  </span>
-                </div>
-
-                <div class="flex items-center gap-2">
-                  <span
-  class="text-[9px] font-black"
-  :class="
-    getProgress(batch.items).count === batch.items.length
-      ? 'text-green-500'
-      : 'text-pink-400'
-  "
-  @click.stop
->
-  {{
-    getProgress(batch.items).count === batch.items.length
-      ? 'Complete'
-      : getProgress(batch.items).count + '/' + batch.items.length
-  }}
-</span>
-
-                  <button
-                    @click.stop="removeSeries(batch.batchId)"
-                    class="text-red-200"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-
-              <div
-                v-if="expandedSeries.has(batch.batchId)"
-                class="p-4 border-t bg-slate-50/20"
-              >
-                <div
-                  class="mb-4 relative aspect-video bg-slate-100 rounded-xl overflow-hidden group"
-                >
-                  <template v-if="seriesImages[batch.batchId]">
-                    <img
-                      :src="seriesImages[batch.batchId]"
-                      @click="zoomedImg = seriesImages[batch.batchId]"
-                      class="w-full h-full object-contain"
-                    />
-                    <button
-                      @click.stop="removeImage(batch.batchId)"
-                      class="absolute top-2 right-2 bg-red-500/80 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px]"
-                    >
-                      ✕
-                    </button>
-                  </template>
-                  <label
-                    v-else
-                    class="w-full h-full flex items-center justify-center cursor-pointer text-[10px] text-slate-400"
-                  >
-                    + 上傳圖片
-                    <input
-                      type="file"
-                      class="hidden"
-                      @change="handleSeriesImageUpload($event, batch.batchId)"
-                      accept="image/*"
-                    />
-                  </label>
-                </div>
-
-                <div class="photo-grid">
-                  <div
-                    v-for="item in batch.items"
-                    :key="item.id"
-                    @click="toggleItem(item.id)"
-                    class="item-slot border-2 cursor-pointer"
-                    :class="
-                      ownedIds.has(item.id)
-                        ? 'border-pink-500 bg-pink-500 text-white'
-                        : 'border-gray-100 bg-white text-gray-300'
-                    "
-                  >
-                    {{ item.type }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- 回頂端按鈕 -->
-    <button
-      v-if="showScrollTop"
-      @click="scrollToTop"
-      class="fixed bottom-4 right-4 bg-pink-500 text-white text-[10px] font-bold px-3 py-2 rounded-full shadow-lg active:scale-95 transition-transform z-[150]"
-    >
-      ⬆ 回頂端
-    </button>
-
-    <!-- 系列模式：成員篩選彈跳面板 -->
-    <div
-      v-if="showSeriesFilter"
-      class="modal-overlay"
-      @click.self="showSeriesFilter = false"
-    >
-      <div
-        class="bg-white w-full max-w-sm p-5 rounded-3xl shadow-2xl
-               border-t-4 border-pink-400 relative
-               max-h-[80vh] flex flex-col"
-      >
-        <button
-          @click="showSeriesFilter = false"
-          class="absolute top-3 right-4 text-gray-300 font-bold"
-        >
-          ✕
-        </button>
-
-        <h3 class="text-base font-black text-gray-800 mb-3">
-          系列篩選
-        </h3>
-
-        <div class="flex-1 overflow-y-auto pr-1">
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="(order, name) in memberOrderMap"
-              :key="name"
-              @click="
-                seriesMemberFilter.has(name)
-                  ? seriesMemberFilter.delete(name)
-                  : seriesMemberFilter.add(name)
-              "
-              class="text-[11px] px-3 py-1.5 rounded-full border font-bold"
-              :class="
-                seriesMemberFilter.has(name)
-                  ? 'bg-pink-500 text-white border-pink-500'
-                  : 'bg-white text-slate-500 border-slate-200'
-              "
-            >
-              {{ name }}
-            </button>
-          </div>
-        </div>
-
-        <div
-          class="mt-4 pt-3 border-t flex justify-between
-                 items-center text-[11px]"
-        >
-          <button
-            v-if="seriesMemberFilter.size"
-            @click="seriesMemberFilter.clear()"
-            class="text-slate-400 font-bold"
-          >
-            清除全部
-          </button>
-          <span v-else class="text-slate-300">未選擇成員</span>
-
-          <button
-            @click="showSeriesFilter = false"
-            class="bg-pink-500 text-white font-bold
-                   px-4 py-1.5 rounded-full shadow-sm
-                   active:scale-95 transition"
-          >
-            完成
-          </button>
-        </div>
-      </div>
+        <div class="chat-list" id="chat-list"></div>
     </div>
+</div>
 
-    <!-- 圖片放大 -->
-    <div
-      v-if="zoomedImg"
-      @click="zoomedImg = null"
-      class="fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-2"
-    >
-      <img :src="zoomedImg" class="max-w-full max-h-full object-contain" />
-    </div>
-  </div>
+<script>
+    let memberAvatar = "https://via.placeholder.com/150";
+    let fanAvatar = "https://via.placeholder.com/150";
+    let lastType = "";
 
-  <script>
-    const { createApp, nextTick } = Vue;
-
-    function createStorage() {
-      if (!("indexedDB" in window)) {
-        console.warn("此裝置不支援 IndexedDB，將使用 localStorage。");
-        const PREFIX = "sakura_kv_";
-        return {
-          async get(key) {
-            try {
-              const raw = localStorage.getItem(PREFIX + key);
-              return raw ? JSON.parse(raw) : null;
-            } catch (e) {
-              console.error("localStorage get 錯誤：", e);
-              return null;
-            }
-          },
-          async set(key, value) {
-            try {
-              localStorage.setItem(PREFIX + key, JSON.stringify(value));
-            } catch (e) {
-              console.error("localStorage set 錯誤：", e);
-            }
-          },
-          async clear() {
-            try {
-              Object.keys(localStorage).forEach(function (k) {
-                if (k.indexOf(PREFIX) === 0) localStorage.removeItem(k);
-              });
-            } catch (e) {
-              console.error("localStorage clear 錯誤：", e);
-            }
-          },
-        };
-      }
-
-      const DB_NAME = "sakura_collection_db";
-      const STORE_NAME = "kv";
-
-      function openDB() {
-        return new Promise(function (resolve, reject) {
-          const req = indexedDB.open(DB_NAME, 1);
-          req.onupgradeneeded = function (event) {
-            const db = event.target.result;
-            if (!db.objectStoreNames.contains(STORE_NAME)) {
-              db.createObjectStore(STORE_NAME);
-            }
-          };
-          req.onsuccess = function () {
-            resolve(req.result);
-          };
-          req.onerror = function () {
-            reject(req.error);
-          };
-        });
-      }
-
-      console.log("使用 IndexedDB 儲存資料。");
-
-      return {
-        async get(key) {
-          const db = await openDB();
-          return new Promise(function (resolve, reject) {
-            const tx = db.transaction(STORE_NAME, "readonly");
-            const store = tx.objectStore(STORE_NAME);
-            const req = store.get(key);
-            req.onsuccess = function () {
-              const raw = req.result;
-              if (typeof raw === "string") {
-                try {
-                  resolve(JSON.parse(raw));
-                } catch (e) {
-                  console.error("解析 IndexedDB JSON 失敗：", e);
-                  resolve(null);
-                }
-              } else {
-                resolve(raw != null ? raw : null);
-              }
-            };
-            req.onerror = function () {
-              reject(req.error);
-            };
-          });
-        },
-        async set(key, value) {
-          const db = await openDB();
-          let payload;
-          try {
-            payload = JSON.stringify(value);
-          } catch (e) {
-            console.error("準備寫入 IndexedDB 時 JSON 序列化失敗：", e);
-            throw e;
-          }
-          return new Promise(function (resolve, reject) {
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            const store = tx.objectStore(STORE_NAME);
-            const req = store.put(payload, key);
-            req.onsuccess = function () {
-              resolve();
-            };
-            req.onerror = function () {
-              reject(req.error);
-            };
-          });
-        },
-        async clear() {
-          const db = await openDB();
-          return new Promise(function (resolve, reject) {
-            const tx = db.transaction(STORE_NAME, "readwrite");
-            const store = tx.objectStore(STORE_NAME);
-            const req = store.clear();
-            req.onsuccess = function () {
-              resolve();
-            };
-            req.onerror = function () {
-              reject(req.error);
-            };
-          });
-        },
-      };
+    function updateUI() {
+        document.getElementById('prev-name').innerText = document.getElementById('input-name').value;
+        // --- 日期格式化處理 ---
+    const rawDate = document.getElementById('input-date').value; // 格式通常是 YYYY-MM-DD
+    if (rawDate) {
+        const dateObj = new Date(rawDate);
+        const month = dateObj.getMonth() + 1; // 月份從0開始
+        const date = dateObj.getDate();
+        const dayList = ['日', '一', '二', '三', '四', '五', '六'];
+        const dayOfWeek = dayList[dateObj.getDay()];
+        
+        // 組合成 1/10(六) 格式
+        document.getElementById('prev-date').innerText = `${month}/${date}(${dayOfWeek})`;
+    }
+        document.getElementById('prev-nick').innerText = document.getElementById('input-nick').value;
+        document.getElementById('prev-part').innerText = document.getElementById('input-part').value;
+        document.getElementById('prev-cards').innerText = document.getElementById('input-cards').value;
+        document.getElementById('prev-seconds').innerText = document.getElementById('input-seconds').value;
     }
 
-    const storage = createStorage();
-    const get = storage.get;
-    const set = storage.set;
-    const clear = storage.clear;
-
-    createApp({
-      data() {
-        return {
-          viewMode: "member",
-          addMode: "member",
-          showInput: false,
-          currentMember: null,
-          selectedGen: "",
-          selectedCategory: "",
-          selectedPreset: "",
-          batchMemberNames: [],
-          scrollY: 0,
-          showScrollTop: false,
-
-          showSeriesFilter: false,
-          seriesMemberFilter: new Set(),
-
-          presetMembers: {"二期生": ["遠藤光莉", "大園玲", "大沼晶保", "幸阪茉里乃", "武元唯衣", "田村保乃", "藤吉夏鈴", "増本綺良", "松田里奈", "森田ひかる", "守屋麗奈", "山﨑天"], "三期生": ["石森璃花", "遠藤理子", "小田倉麗奈", "小島凪紗", "谷口愛季", "中嶋優月", "的野美青", "向井純葉", "村井優", "村山美羽", "山下瞳月"], "四期生": ["浅井恋乃未", "稲熊ひな", "勝又春", "佐藤愛桜", "中川智尋", "松本和子", "目黒陽色", "山川宇衣", "山田桃実"], "畢業生": ["松平璃子", "守屋茜", "渡邉梨加", "渡邉理佐", "原田葵", "尾関梨香", "菅井友香", "関有美子", "土生瑞穂", "小林由依", "齋藤冬優花", "上村莉菜", "小池美波", "井上梨名"]},
-                    categorizedSeries: {"封入": ["1st Single「Nobody's fault」封入", "2nd Single「BAN」封入", "3rd Single「流れ弾」封入", "4th Single「五月雨よ」封入", "1st Album「As you know?」封入", "5th Single「桜月」封入", "6th Single「Start over!」封入", "7th Single「承認欲求」封入", "8th Single「何歳の頃に戻りたいのか?」 封入", "9th Single「自業自得」封入", "10th Single「I want tomorrow to come」封入", "11th Single「UDAGAWA GENERATION」封入", "2nd Album「Addiction」封入", "12th Single「Make or Break」封入", "13th Single「Unhappy birthday構文」封入", "14th Single「The growing up train」封入"], "MV衣裝": ["「Nobody's fault」MVロケーション衣装", "「なぜ恋をして来なかったんだろう?」MVロケーション衣装", "「Buddies」MVロケーション衣装", "「BAN」MVロケーション衣装", "「偶然の答え」MVロケーション衣装", "「思ったよりも寂しくはない」MVロケーション衣装", "「流れ弾」MVロケーション衣装", "「Dead end」MVロケーション衣装", "「無言の宇宙」MVロケーション衣装", "「Dead end」MVロケーション衣装", "「流れ弾」MV黒衣装", "「五月雨よ」MVロケーション衣装", "「五月雨よ」MVパフォーマンス衣装", "「車間距離」MVロケーション衣装", "「僕のジレンマ」MVロケーション衣装", "「摩擦係数」MV衣装", "「桜月」MV衣装", "「桜月」MV青衣装", "「Cool」MV衣装", "「夏の近道」 MV衣装", "「夏の近道」 MV制服", "「BAN」 MV衣装", "「Start over!」MV衣装", "「ドローン旋回中」MV衣装", "「静寂の暴力」 MV衣装", "「Nobody's fault」MV衣装", "「承認欲求」MV衣装", "「マモリビト」 MV衣装", "「隙間風よ」MV衣装", "「何歳の頃に戻りたいのか?」MV衣装", "「何度 LOVE SONG の歌詞を読み返しただろう」 MV衣装", "「油を注せ!」 MV衣装", "「自業自得」MV衣装", "「愛し合いなさい」 MV衣装", "「引きこもる時間はない」 MV衣装", "「I want tomorrow to come」MV衣装", "「本質的なこと」 MV衣装", "「僕は僕を好きになれない」 MV衣装", "「UDAGAWA GENERATION」MV衣装", "「Nothing Special」MV衣装", "「Nightmare 症候群」MV衣装", "「Addiction」 MV衣装", "「Make or Break」 MV衣装", "「港区パセリ」 MV衣装", "「死んだふり」MV衣装", "「Unhappy birthday構文」MV衣装", "「木枯らしは泣かない」MV衣装", "「Alter ego」MV衣装", "「The growing up train」MV衣装"], "封面": ["流れ弾ジャケット写真衣装", "「Start over!」 ジャケット写真衣装", "「承認欲求」ジャケット写真衣装", "「何歳の頃に戻りたいのか?」ジャケット写真衣装", "「自業自得」ジャケット写真衣装", "「I want tomorrow to come」ジャケット写真衣装", "「UDAGAWA GENERATION」ジャケット写真衣装", "「Make or Break」ジャケット写真衣装", "「Unhappy birthday構文」ジャケット写真衣装", "「The growing up train」ジャケット写真衣装"], "LIVE衣裝": ["三期生ブックレット衣装", "「3rd TOUR 2023」オープニング衣装", "「3rd TOUR 2023」白スーツ衣装", "2023年夏フェス衣装", "「3rd Single BACKS LIVE!!」衣装", "「3rd TOUR 2023」ピンク衣装", "「3rd YEAR ANNIVERSARY LIVE」ライブ衣装", "「7th Single BACKS LIVE!!」オープニング衣装", "「小林由依 卒業コンサート」ライブ衣装", "「小林由依 卒業コンサート」赤衣装", "「3rd TOUR 2023」ライブ衣装", "2023年 年末歌唱衣装", "「8th Single BACKS LIVE!!」ライブ衣装", "「4th ARENA TOUR 2024」ライブ衣装", "「3rd YEAR ANNIVERSARY LIVE」ライブ衣装", "「4th ARENA TOUR IN 東京ドーム」オープニング衣装", "「9th Single BACKS LIVE!!」オープニング衣装", "2023年 年末衣装", "2024年夏フェス衣装", "「4th ARENA TOUR」オープニング衣装", "「4th YEAR ANNIVERSARY LIVE」ライブ衣装", "「4th ARENA TOUR」ライブ衣装", "「三期生ライブ」オープニング衣装", "「4th ARENA TOUR IN 東京ドーム」ライブ衣装", "「10th Single BACKS LIVE!!」ライブ衣装", "「5th TOUR 2025 “Addiction”」ライブ衣装", "「三期生ライブ」衣装", "「12th Single BACKS LIVE!!」ライブ衣装", "「5th TOUR 2025 “Addiction”」黑衣装", "「12th Single BACKS LIVE!!」黑衣装", "「5th TOUR 2025 “Addiction”ドーム公演」シルバー衣装"], "其他": ["2023年 冬私服コーデ", "スーツコーデ", "カラーコーデ", "サマーワンピース", "デニムコーデ", "2023年 ハロウィン衣装", "2023年 クリスマスサンタ衣装", "2023年 読書コーデ", "2024年 振袖衣装", "おうちコーデ", "ジャンプスーツ", "2024年 春私服コーデ", "カラーデニム", "2024年浴衣", "麥わら帽子コーデ", "Tシャツコーデ", "ワイシャツコーデ", "2024年 ハロウィン衣装", "カラーニットコーデ", "2024年 クリスマスサンタ衣装", "どうぶつ着ぐるみ", "マフラーコーデ", "2025年振袖", "いぬみみコーデ", "モードコーデ", "冬私服コーデ", "ネクタイコーデ", "レザージャケットコーデ", "2025年浴衣", "ポロシャツコーデ", "クラシックコーデ", "チェックコーデ", "パイレーツ衣装", "冬服", "2025年 サンタ衣装", "スタイリング制服", "2026年 振袖", "ジャージ", "2026年 バレンタインコーデ", "スタジャンコーデ"], "特殊": ["【会場予約特典】 東京ドーム限定成員生寫真", "東京ドーム完賣御禮紀念!! ライブ會場撮りおろしプレミアム生寫真", "福袋 2025 「4th ARENA TOUR IN 東京ドーム」 オープニング衣装", "福袋 2026 MV衣装"]},
-
-          newItem: { name: "", series: "", category: "" },
-          rawItems: [],
-          ownedIds: new Set(),
-          seriesImages: {},
-          seriesOrder: {},
-
-          expandedSeries: new Set(),
-          expandedSeriesMode: new Set(),
-          collapsedMemberCats: new Set(),
-          collapsedSeriesCats: new Set(),
-          collapsedMemberListCats: new Set(),
-
-          zoomedImg: null,
-          singleSlotMode: false,
+    function previewFile(type) {
+        const file = document.getElementById(`up-${type}`).files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            if (type === 'member') { memberAvatar = reader.result; document.getElementById('prev-img-member').src = reader.result; }
+            else if (type === 'fan') { fanAvatar = reader.result; }
+            else { document.getElementById('bg-overlay').style.backgroundImage = `url(${reader.result})`; }
         };
-      },
-      computed: {
-        memberList() {
-          return Array.from(
-            new Set(
-              this.rawItems.map(function (i) {
-                return i.name;
-              })
-            )
-          );
-        },
-        memberOrderMap() {
-          const map = {};
-          let idx = 0;
-          const self = this;
-          Object.keys(this.presetMembers).forEach(function (gen) {
-            self.presetMembers[gen].forEach(function (name) {
-              if (map[name] == null) map[name] = idx++;
-            });
-          });
-          return map;
-        },
-        itemsBySeriesNormalized() {
-          const grouped = {};
-          const self = this;
-          this.rawItems.forEach(function (item) {
-            const cat = item.category || "其他";
-            if (!grouped[cat]) grouped[cat] = {};
-            if (!grouped[cat][item.series]) grouped[cat][item.series] = [];
-            const batches = grouped[cat][item.series];
-            let batch = null;
-            for (let i = 0; i < batches.length; i++) {
-              if (batches[i].batchId === item.batchId) {
-                batch = batches[i];
-                break;
-              }
-            }
-            if (!batch) {
-              batch = {
-                batchId: item.batchId,
-                seriesName: item.series,
-                memberName: item.name,
-                items: [],
-                totalSets: 1,
-                groupIndex: 1,
-              };
-              batches.push(batch);
-            }
-            batch.items.push(item);
-          });
+        if (file) reader.readAsDataURL(file);
+    }
 
-          Object.keys(grouped).forEach(function (cat) {
-            const seriesMap = grouped[cat];
-            Object.keys(seriesMap).forEach(function (s) {
-              const batches = seriesMap[s];
-              const perMember = {};
-              batches.forEach(function (batch) {
-                if (!perMember[batch.memberName]) {
-                  perMember[batch.memberName] = [];
-                }
-                perMember[batch.memberName].push(batch);
-              });
-              Object.keys(perMember).forEach(function (m) {
-                const list = perMember[m];
-                list.sort(function (a, b) {
-                  return String(a.batchId).localeCompare(String(b.batchId));
-                });
-                const total = list.length;
-                list.forEach(function (batch, idx) {
-                  batch.totalSets = total;
-                  batch.groupIndex = idx + 1;
-                });
-              });
-              batches.sort(function (a, b) {
-                const ao =
-                  self.memberOrderMap[a.memberName] != null
-                    ? self.memberOrderMap[a.memberName]
-                    : 9999;
-                const bo =
-                  self.memberOrderMap[b.memberName] != null
-                    ? self.memberOrderMap[b.memberName]
-                    : 9999;
-                if (ao !== bo) return ao - bo;
-                return String(a.memberName).localeCompare(
-                  String(b.memberName),
-                  "ja"
-                );
-              });
-            });
-          });
-
-          return grouped;
-        },
-        itemsBySeriesSorted() {
-          const result = {};
-          let base = this.itemsBySeriesNormalized;
-          const self = this;
-
-          Object.keys(base).forEach(function (cat) {
-            let seriesObj = base[cat];
-            const baseOrder = self.categorizedSeries[cat] || [];
-            const customOrder = self.seriesOrder[cat] || [];
-            const seen = {};
-            const finalOrder = [];
-
-            // 成員篩選
-            if (self.seriesMemberFilter && self.seriesMemberFilter.size) {
-              const filtered = {};
-              Object.keys(seriesObj).forEach(function (seriesName) {
-                const batches = seriesObj[seriesName];
-                const hasMatch = batches.some(function (b) {
-                  return self.seriesMemberFilter.has(b.memberName);
-                });
-                if (hasMatch) {
-                  filtered[seriesName] = batches;
-                }
-              });
-              seriesObj = filtered;
-            }
-
-            baseOrder.forEach(function (name) {
-              if (seriesObj[name]) {
-                finalOrder.push(name);
-                seen[name] = true;
-              }
-            });
-            customOrder.forEach(function (name) {
-              if (seriesObj[name] && !seen[name]) {
-                finalOrder.push(name);
-                seen[name] = true;
-              }
-            });
-            Object.keys(seriesObj).forEach(function (name) {
-              if (!seen[name]) {
-                finalOrder.push(name);
-                seen[name] = true;
-              }
-            });
-
-            const sortedSeries = {};
-            finalOrder.forEach(function (name) {
-              sortedSeries[name] = seriesObj[name];
-            });
-            result[cat] = sortedSeries;
-          });
-
-          return result;
-        },
-        memberItemsGrouped() {
-          if (!this.currentMember) return [];
-
-          const groupedMap = {};
-          const self = this;
-
-          this.rawItems
-            .filter(function (i) {
-              return i.name === self.currentMember;
-            })
-            .forEach(function (item) {
-              const cat = item.category || "其他";
-              if (!groupedMap[cat]) {
-                groupedMap[cat] = { category: cat, items: [] };
-              }
-              const list = groupedMap[cat].items;
-              let batch = null;
-              for (let i = 0; i < list.length; i++) {
-                if (list[i].batchId === item.batchId) {
-                  batch = list[i];
-                  break;
-                }
-              }
-              if (!batch) {
-                batch = {
-                  batchId: item.batchId,
-                  seriesName: item.series,
-                  items: [],
-                  totalSets: 1,
-                  groupIndex: 1,
-                };
-                list.push(batch);
-              }
-              batch.items.push(item);
-            });
-
-          Object.keys(groupedMap).forEach(function (cat) {
-            const catBlock = groupedMap[cat];
-            const perSeries = {};
-            catBlock.items.forEach(function (batch) {
-              if (!perSeries[batch.seriesName]) {
-                perSeries[batch.seriesName] = [];
-              }
-              perSeries[batch.seriesName].push(batch);
-            });
-            Object.keys(perSeries).forEach(function (seriesName) {
-              const list = perSeries[seriesName];
-              list.sort(function (a, b) {
-                return String(a.batchId).localeCompare(String(b.batchId));
-              });
-              const total = list.length;
-              list.forEach(function (batch, idx) {
-                batch.totalSets = total;
-                batch.groupIndex = idx + 1;
-              });
-            });
-          });
-
-          const result = [];
-          const categoryBaseOrder = ["封入", "MV衣裝", "封面照", "LIVE衣裝", "其他"];
-          const cats = Object.keys(groupedMap);
-
-          cats.sort(function (a, b) {
-            const ai = categoryBaseOrder.indexOf(a);
-            const bi = categoryBaseOrder.indexOf(b);
-            const av = ai === -1 ? 999 : ai;
-            const bv = bi === -1 ? 999 : bi;
-            if (av !== bv) return av - bv;
-            return String(a).localeCompare(String(b), "zh-Hant");
-          });
-
-          cats.forEach(function (cat) {
-            const block = groupedMap[cat];
-            const baseOrder = self.categorizedSeries[cat] || [];
-            const seen = {};
-            const sortedItems = [];
-
-            baseOrder.forEach(function (seriesName) {
-              block.items.forEach(function (batch) {
-                if (
-                  batch.seriesName === seriesName &&
-                  !seen[batch.batchId]
-                ) {
-                  sortedItems.push(batch);
-                  seen[batch.batchId] = true;
-                }
-              });
-            });
-
-          block.items.forEach(function (batch) {
-            if (!seen[batch.batchId]) {
-              sortedItems.push(batch);
-              seen[batch.batchId] = true;
-            }
-          });
-
-            result.push({
-              category: cat,
-              items: sortedItems,
-            });
-          });
-
-          return result;
-        },
-        // 成員總進度統計
-        currentMemberStats() {
-          if (!this.currentMember) return null;
-
-          const items = this.rawItems.filter(
-            (i) => i.name === this.currentMember
-          );
-          if (!items.length) return null;
-
-          const totalSlots = items.length;
-          const ownedSlots = items.filter((i) =>
-            this.ownedIds.has(i.id)
-          ).length;
-
-          const batchMap = {};
-          items.forEach((i) => {
-            if (!batchMap[i.batchId]) batchMap[i.batchId] = [];
-            batchMap[i.batchId].push(i);
-          });
-
-          const totalBatches = Object.keys(batchMap).length;
-          let completedBatches = 0;
-          Object.values(batchMap).forEach((arr) => {
-            const ownedInBatch = arr.filter((i) =>
-              this.ownedIds.has(i.id)
-            ).length;
-            if (ownedInBatch === arr.length) completedBatches++;
-          });
-
-          const percent = totalSlots
-            ? Math.round((ownedSlots / totalSlots) * 100)
-            : 0;
-
-          return {
-            totalSlots,
-            ownedSlots,
-            totalBatches,
-            completedBatches,
-            percent,
-          };
-        },
-      },
-      async mounted() {
-        try {
-          const r = await get("raw_items");
-          const o = await get("owned_photos");
-          const s = await get("series_images");
-          const so = await get("series_order");
-          if (r && Array.isArray(r)) this.rawItems = r;
-          if (o && Array.isArray(o)) this.ownedIds = new Set(o);
-          if (s && typeof s === "object" && s) this.seriesImages = s;
-          if (so && typeof so === "object" && so) this.seriesOrder = so;
-        } catch (e) {
-          console.error("載入資料錯誤：", e);
+    function addChat(type) {
+        const msg = document.getElementById('input-msg').value;
+        if (!msg && type !== 'note') return;
+        const list = document.getElementById('chat-list');
+        const div = document.createElement('div');
+        
+        if (type === 'note') {
+            div.className = 'narration';
+            div.innerText = msg;
+            lastType = "note";
+        } else {
+            const isContinuous = (type === lastType);
+            div.className = `chat-item item-${type} ${isContinuous ? 'no-avatar' : ''}`;
+            const avatarHtml = isContinuous ? '' : `<img src="${type === 'member' ? memberAvatar : fanAvatar}" class="chat-avatar">`;
+            
+            div.innerHTML = `
+                <span class="delete-btn" onclick="this.parentElement.remove()">×</span>
+                ${avatarHtml}
+                <div class="bubble">${msg.replace(/\n/g, '<br>')}</div>
+            `;
+            lastType = type;
         }
+        list.appendChild(div);
+        document.getElementById('input-msg').value = '';
+    }
 
-        window.addEventListener("scroll", this.handleScroll, {
-          passive: true,
+    // 存檔功能：將文字資訊存入瀏覽器快取
+    function saveToLocal() {
+        const data = {
+            name: document.getElementById('input-name').value,
+            nick: document.getElementById('input-nick').value,
+            date: document.getElementById('input-date').value,
+            part: document.getElementById('input-part').value,
+            cards: document.getElementById('input-cards').value,
+            seconds: document.getElementById('input-seconds').value,
+            chats: document.getElementById('chat-list').innerHTML
+        };
+        localStorage.setItem('meguri_save', JSON.stringify(data));
+        alert('存檔成功！');
+    }
+
+    // 讀取功能
+    function loadFromLocal() {
+        const saved = localStorage.getItem('meguri_save');
+        if (saved) {
+            const data = JSON.parse(saved);
+            document.getElementById('input-name').value = data.name;
+            document.getElementById('input-nick').value = data.nick;
+            document.getElementById('input-date').value = data.date;
+            document.getElementById('input-part').value = data.part;
+            document.getElementById('input-cards').value = data.cards;
+            document.getElementById('input-seconds').value = data.seconds;
+            document.getElementById('chat-list').innerHTML = data.chats;
+            updateUI();
+            alert('讀取完成！');
+        } else {
+            alert('沒有找到存檔紀錄。');
+        }
+    }
+
+    // 導出截圖：優化不壓縮
+    function saveImage() {
+        const target = document.querySelector("#capture-area");
+        const btns = document.querySelectorAll('.delete-btn');
+        btns.forEach(b => b.style.display = 'none');
+
+        html2canvas(target, { 
+            scale: 4, // 提高解析度解決模糊問題
+            useCORS: true, 
+            backgroundColor: "#ffffff",
+            imageTimeout: 0
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Sakurazaka_Meguri_${document.getElementById('input-name').value}.png`;
+            link.href = canvas.toDataURL("image/png", 1.0);
+            link.click();
+            btns.forEach(b => b.style.display = 'block');
         });
-      },
-      unmounted() {
-        window.removeEventListener("scroll", this.handleScroll);
-      },
-      methods: {
-        async saveData() {
-          try {
-            localStorage.setItem(
-              "sakura_txt",
-              JSON.stringify({
-                rawItems: this.rawItems,
-                ownedIds: Array.from(this.ownedIds),
-                seriesImages: this.seriesImages,
-                seriesOrder: this.seriesOrder,
-              })
-            );
-          } catch (e) {
-            console.error("localStorage 備份錯誤：", e);
-          }
-
-          try {
-            await set("raw_items", this.rawItems);
-            await set("owned_photos", Array.from(this.ownedIds));
-            await set("series_images", this.seriesImages);
-            await set("series_order", this.seriesOrder);
-          } catch (e) {
-            console.error("儲存資料錯誤：", e);
-          }
-        },
-        importData(event) {
-          const file = event.target.files[0];
-          if (!file) return;
-
-          const reader = new FileReader();
-          const self = this;
-          reader.onload = async function (e) {
-            try {
-              const text = e.target.result;
-              const data = JSON.parse(text);
-
-              self.rawItems = Array.isArray(data.rawItems)
-                ? data.rawItems
-                : [];
-              self.ownedIds = new Set(
-                Array.isArray(data.ownedIds) ? data.ownedIds : []
-              );
-              self.seriesImages =
-                data.seriesImages && typeof data.seriesImages === "object"
-                  ? data.seriesImages
-                  : {};
-              self.seriesOrder =
-                data.seriesOrder && typeof data.seriesOrder === "object"
-                  ? data.seriesOrder
-                  : {};
-
-              await self.saveData();
-              alert("匯入完成！");
-            } catch (err) {
-              console.error("匯入失敗：", err);
-              alert("匯入失敗，檔案格式可能不正確。");
-            } finally {
-              event.target.value = "";
-            }
-          };
-          reader.readAsText(file);
-        },
-        onCategorySelect() {
-          if (this.selectedCategory !== "custom_cat") {
-            this.newItem.category = this.selectedCategory;
-          }
-          this.selectedPreset = "";
-        },
-        onSeriesSelect() {
-          if (this.selectedPreset !== "custom_series") {
-            this.newItem.series = this.selectedPreset;
-          }
-        },
-        getUniqueMemberCount(batches) {
-          return Array.from(
-            new Set(
-              batches.map(function (b) {
-                return b.memberName;
-              })
-            )
-          ).length;
-        },
-        getMemberOwnedCount(name) {
-          return this.rawItems.filter(
-            (i) => i.name === name && this.ownedIds.has(i.id)
-          ).length;
-        },
-        getProgress(items) {
-          return {
-            count: items.filter((i) => this.ownedIds.has(i.id)).length,
-          };
-        },
-        getActiveMembersInGen(gen) {
-          const self = this;
-          return this.presetMembers[gen].filter(function (name) {
-            return self.memberList.indexOf(name) !== -1;
-          });
-        },
-        getGenActiveCount(gen) {
-          return this.getActiveMembersInGen(gen).length;
-        },
-        toggleSeries(id) {
-          if (this.expandedSeries.has(id)) this.expandedSeries.delete(id);
-          else this.expandedSeries.add(id);
-        },
-        toggleSeriesMode(cat, sName) {
-          const key = cat + sName;
-          if (this.expandedSeriesMode.has(key))
-            this.expandedSeriesMode.delete(key);
-          else this.expandedSeriesMode.add(key);
-        },
-        toggleCategoryMember(cat) {
-          if (this.collapsedMemberCats.has(cat))
-            this.collapsedMemberCats.delete(cat);
-          else this.collapsedMemberCats.add(cat);
-        },
-        toggleCategorySeries(cat) {
-          if (this.collapsedSeriesCats.has(cat))
-            this.collapsedSeriesCats.delete(cat);
-          else this.collapsedSeriesCats.add(cat);
-        },
-        toggleMemberListCat(gen) {
-          if (this.collapsedMemberListCats.has(gen))
-            this.collapsedMemberListCats.delete(gen);
-          else this.collapsedMemberListCats.add(gen);
-        },
-        async toggleItem(id) {
-          if (this.ownedIds.has(id)) this.ownedIds.delete(id);
-          else this.ownedIds.add(id);
-          await this.saveData();
-        },
-        async removeSeries(bId) {
-          if (!confirm("確定刪除？")) return;
-          this.rawItems = this.rawItems.filter(function (i) {
-            return i.batchId !== bId;
-          });
-          delete this.seriesImages[bId];
-          await this.saveData();
-        },
-        async removeImage(bId) {
-          if (!confirm("刪除圖片？")) return;
-          delete this.seriesImages[bId];
-          await this.saveData();
-        },
-        async handleSeriesImageUpload(event, bId) {
-          const file = event.target.files[0];
-          if (!file) return;
-          const reader = new FileReader();
-          const self = this;
-          reader.onload = function (e) {
-            const img = new Image();
-            img.onload = async function () {
-              const canvas = document.createElement("canvas");
-              const MAX_WIDTH = 800;
-              const ratio = MAX_WIDTH / img.width;
-              canvas.width = MAX_WIDTH;
-              canvas.height = img.height * ratio;
-              const ctx = canvas.getContext("2d");
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              self.seriesImages[bId] = canvas.toDataURL("image/jpeg", 0.5);
-              await self.saveData();
-            };
-            img.src = e.target.result;
-          };
-          reader.readAsDataURL(file);
-        },
-        async addBatchItems() {
-  // 1. 依模式決定要新增哪些成員
-  const names =
-    this.addMode === "member"
-      ? this.newItem.name
-        ? [this.newItem.name]
-        : []
-      : this.batchMemberNames.slice(); // 多選成員複製一份
-
-  if (!names.length) {
-    alert("請先選擇成員（或勾選至少一位成員）");
-    return;
-  }
-  if (!this.newItem.category) {
-    alert("請先選擇「分類」");
-    return;
-  }
-  if (!this.newItem.series) {
-    alert("請先選擇「系列」或輸入自訂系列名稱");
-    return;
-  }
-
-  // 2. 記錄系列順序（自訂排序用）
-  if (!this.seriesOrder[this.newItem.category]) {
-    this.seriesOrder[this.newItem.category] = [];
-  }
-  if (
-    this.seriesOrder[this.newItem.category].indexOf(
-      this.newItem.series
-    ) === -1
-  ) {
-    this.seriesOrder[this.newItem.category].push(this.newItem.series);
-  }
-
-  // 3. 實際新增 rawItems（支援 4 張 / 單張模式）
-  const self = this;
-  let lastBatchId = null;
-
-  names.forEach(function (name) {
-    const bId =
-      "b-" + Date.now() + Math.random().toString(36).slice(2, 7);
-    lastBatchId = bId;
-
-    const types = self.singleSlotMode
-      ? ["Special"] // 單張系列
-      : ["ヨリ", "チュウ", "ヒキ", "座り"]; // 一般 4 張
-
-    types.forEach(function (type) {
-      self.rawItems.push({
-        id: Math.random().toString(36).slice(2, 11),
-        batchId: bId,
-        name: name,
-        series: self.newItem.series,
-        category: self.newItem.category,
-        type: type,
-      });
-    });
-  });
-
-  // 4. 存檔＋關閉面板
-  await this.saveData();
-  this.showInput = false;
-  this.batchMemberNames = [];
-
-  const cat = this.newItem.category;
-  const seriesName = this.newItem.series;
-
-  // 5. 新增完的行為：依新增模式做跳轉
-
-  if (this.addMode === "member" && names.length === 1 && lastBatchId) {
-    // ➤ 成員模式：跳到該成員頁，展開新系列並捲動到中間
-    this.currentMember = names[0];
-    this.collapsedMemberCats.delete(cat); // 確保分類是展開狀態
-
-    await nextTick(); // 等 DOM 更新
-    this.expandedSeries.add(lastBatchId);
-
-    const el = document.getElementById("batch-target-" + lastBatchId);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  } else if (this.addMode === "series") {
-    // ➤ 系列模式：切到系列模式，展開該系列並捲動
-    this.viewMode = "series";
-    this.currentMember = null;
-    this.collapsedSeriesCats.delete(cat); // 確保分類展開
+</script>
 
-    await nextTick(); // 等列表渲染完成
-    this.expandedSeriesMode.add(cat + seriesName);
-
-    const el = document.getElementById("series-target-" + seriesName);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }
-
-  // 6. 重置「單張模式」開關（避免下一次忘了關）
-  this.singleSlotMode = false;
-},
-
-        async exportData() {
-          const data = {
-            rawItems: this.rawItems,
-            ownedIds: Array.from(this.ownedIds),
-            seriesImages: this.seriesImages,
-            seriesOrder: this.seriesOrder,
-          };
-          const blob = new Blob([JSON.stringify(data)], {
-            type: "text/plain",
-          });
-          const a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = "sakura_backup.txt";
-          a.click();
-        },
-        async clearAll() {
-          if (!confirm("清空所有資料？")) return;
-          try {
-            await clear();
-          } catch (e) {
-            console.error("清空儲存失敗：", e);
-          }
-          localStorage.removeItem("sakura_txt");
-          location.reload();
-        },
-        handleScroll() {
-          const y =
-            window.scrollY ||
-            window.pageYOffset ||
-            document.documentElement.scrollTop ||
-            0;
-          this.scrollY = y;
-          this.showScrollTop =
-            y > 300 && this.viewMode === "series" && !this.currentMember;
-        },
-        scrollToTop() {
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        },
-      },
-    }).mount("#app");
-  </script>
 </body>
 </html>
