@@ -97,10 +97,7 @@
     >
       <h1
         class="text-xl font-black text-gray-800 cursor-pointer"
-        @click="
-          currentMember = null;
-          viewMode = 'member';
-        "
+@click="navigateTo({ page: 'home' }, '#home')"
       >
         🌸 櫻坂46
       </h1>
@@ -346,21 +343,14 @@
         class="flex justify-center items-center gap-4 my-4"
       >
         <button
-          @click="
-            viewMode = 'member';
-            expandedSeriesMode.clear();
-          "
+@click="navigateTo({ page: 'home' }, '#home')"
           class="tab-btn"
           :class="viewMode === 'member' ? 'tab-active' : 'text-slate-400'"
         >
           成員模式
         </button>
         <button
-          @click="
-            viewMode = 'series';
-            currentMember = null;
-            expandedSeriesMode.clear();
-          "
+@click="navigateTo({ page: 'series' }, '#series')"
           class="tab-btn"
           :class="viewMode === 'series' ? 'tab-active' : 'text-slate-400'"
         >
@@ -393,7 +383,7 @@
               <div
                 v-for="name in getActiveMembersInGen(g)"
                 :key="name"
-                @click="currentMember = name"
+                @click="navigateTo({ page: 'member', memberName: name }, '#member-' + name)"
                 class="bg-white p-5 rounded-2xl shadow-sm text-center cursor-pointer"
               >
                 <div class="font-black text-gray-700">{{ name }}</div>
@@ -416,6 +406,24 @@
       <!-- 系列模式 -->
       <div v-if="!currentMember && viewMode === 'series'">
         <!-- 篩選按鈕（開啟 modal） -->
+<!-- 完成狀態篩選 -->
+<div class="flex justify-end mb-3 px-1 text-[10px] font-bold gap-2">
+  <button
+    @click="seriesCompleteFilter = 'all'"
+    :class="seriesCompleteFilter==='all' ? 'text-pink-500' : 'text-slate-400'"
+  >全部</button>
+
+  <button
+    @click="seriesCompleteFilter = 'complete'"
+    :class="seriesCompleteFilter==='complete' ? 'text-green-500' : 'text-slate-400'"
+  >完成</button>
+
+  <button
+    @click="seriesCompleteFilter = 'incomplete'"
+    :class="seriesCompleteFilter==='incomplete' ? 'text-pink-400' : 'text-slate-400'"
+  >未完成</button>
+</div>
+
         <div class="flex justify-end mb-3 px-1">
           <button
             @click="showSeriesFilter = true"
@@ -479,7 +487,7 @@
                   class="flex items-center gap-4 py-2 border-b border-gray-50 last:border-0"
                 >
                   <div
-                    @click="currentMember = b.memberName"
+                    @click="goToMemberSeries(b)"
                     class="text-[11px] font-bold cursor-pointer flex items-center min-w-[90px] max-w-[90px]"
                   >
                     <span class="truncate">{{ b.memberName }}</span>
@@ -535,7 +543,7 @@
         <div class="flex items-center justify-between mb-3 px-1">
           <div class="flex items-center gap-2">
             <button
-              @click="currentMember = null"
+              @click="navigateTo({ page: 'home' }, '#home')"
               class="text-gray-300 font-bold text-2xl px-2"
             >
               ‹
@@ -570,6 +578,36 @@
 
         <!-- 成員總進度條 -->
         <div v-if="currentMemberStats" class="px-1 mb-5 text-[11px]">
+<!-- 成員完成篩選 -->
+<div class="flex justify-end mb-4 px-1 text-[11px] font-bold gap-3">
+  <button
+    @click="memberCompleteFilter = 'all'"
+    :class="memberCompleteFilter==='all'
+      ? 'text-pink-500'
+      : 'text-slate-400'"
+  >
+    全部
+  </button>
+
+  <button
+    @click="memberCompleteFilter = 'complete'"
+    :class="memberCompleteFilter==='complete'
+      ? 'text-green-500'
+      : 'text-slate-400'"
+  >
+    已完成
+  </button>
+
+  <button
+    @click="memberCompleteFilter = 'incomplete'"
+    :class="memberCompleteFilter==='incomplete'
+      ? 'text-pink-400'
+      : 'text-slate-400'"
+  >
+    未完成
+  </button>
+</div>
+
           <div class="flex justify-between mb-1">
             <span class="font-bold text-slate-600">
               {{ currentMemberStats.ownedSlots }} /
@@ -961,7 +999,9 @@
           collapsedMemberCats: new Set(),
           collapsedSeriesCats: new Set(),
           collapsedMemberListCats: new Set(),
-
+          memberCompleteFilter: "all",   // member 模式用
+          seriesCompleteFilter: "all",   // series 模式用
+  
           zoomedImg: null,
           singleSlotMode: false,
         };
@@ -1004,13 +1044,15 @@
             }
             if (!batch) {
               batch = {
-                batchId: item.batchId,
-                seriesName: item.series,
-                memberName: item.name,
-                items: [],
-                totalSets: 1,
-                groupIndex: 1,
-              };
+  batchId: item.batchId,
+  seriesName: item.series,
+  memberName: item.name,
+  category: cat,
+  items: [],
+  totalSets: 1,
+  groupIndex: 1,
+};
+
               batches.push(batch);
             }
             batch.items.push(item);
@@ -1084,6 +1126,48 @@
               });
               seriesObj = filtered;
             }
+// 完成狀態篩選
+if (self.seriesCompleteFilter !== "all") {
+  const filteredByComplete = {};
+
+  Object.keys(seriesObj).forEach(function (seriesName) {
+    const batches = seriesObj[seriesName];
+
+    // 如果有選成員篩選，只保留那些成員
+    let targetBatches = batches;
+
+    if (self.seriesMemberFilter && self.seriesMemberFilter.size) {
+      targetBatches = batches.filter(function (b) {
+        return self.seriesMemberFilter.has(b.memberName);
+      });
+    }
+
+    // 如果篩選後沒有任何成員，直接不顯示
+    if (!targetBatches.length) return;
+
+    const hasMatch = targetBatches.some(function (b) {
+      const owned = b.items.filter((i) =>
+        self.ownedIds.has(i.id)
+      ).length;
+
+      const isComplete = owned === b.items.length;
+
+      if (self.seriesCompleteFilter === "complete")
+        return isComplete;
+
+      if (self.seriesCompleteFilter === "incomplete")
+        return !isComplete;
+
+      return true;
+    });
+
+    if (hasMatch) {
+      filteredByComplete[seriesName] = batches;
+    }
+  });
+
+  seriesObj = filteredByComplete;
+}
 
             baseOrder.forEach(function (name) {
               if (seriesObj[name]) {
@@ -1184,7 +1268,7 @@
             return String(a).localeCompare(String(b), "zh-Hant");
           });
 
-          cats.forEach(function (cat) {
+          cats.forEach((cat) => {
             const block = groupedMap[cat];
             const baseOrder = self.categorizedSeries[cat] || [];
             const seen = {};
@@ -1211,7 +1295,28 @@
 
             result.push({
               category: cat,
-              items: sortedItems,
+items: sortedItems.filter((batch) => {
+  if (this.memberCompleteFilter === "all") {
+    return true;
+  }
+
+  const owned = batch.items.filter((i) =>
+    this.ownedIds.has(i.id)
+  ).length;
+
+  const isComplete = owned === batch.items.length;
+
+  if (this.memberCompleteFilter === "complete") {
+    return isComplete;
+  }
+
+  if (this.memberCompleteFilter === "incomplete") {
+    return !isComplete;
+  }
+
+  return true;
+})
+
             });
           });
 
@@ -1259,7 +1364,27 @@
           };
         },
       },
+
+watch: {
+  currentMember() {
+    this.memberCompleteFilter = "all";
+  }
+},
+
       async mounted() {
+const hash = location.hash;
+
+if (hash.startsWith("#member-")) {
+  const name = decodeURIComponent(hash.replace("#member-", ""));
+  this.applyState({ page: "member", memberName: name });
+}
+else if (hash === "#series") {
+  this.applyState({ page: "series" });
+}
+else {
+  this.applyState({ page: "home" });
+}
+
         try {
           const r = await get("raw_items");
           const o = await get("owned_photos");
@@ -1276,35 +1401,105 @@
         window.addEventListener("scroll", this.handleScroll, {
           passive: true,
         });
+window.addEventListener("popstate", this.handlePopState);
       },
       unmounted() {
         window.removeEventListener("scroll", this.handleScroll);
+window.removeEventListener("popstate", this.handlePopState);
       },
-      methods: {
-        async saveData() {
-          try {
-            localStorage.setItem(
-              "sakura_txt",
-              JSON.stringify({
-                rawItems: this.rawItems,
-                ownedIds: Array.from(this.ownedIds),
-                seriesImages: this.seriesImages,
-                seriesOrder: this.seriesOrder,
-              })
-            );
-          } catch (e) {
-            console.error("localStorage 備份錯誤：", e);
-          }
 
-          try {
-            await set("raw_items", this.rawItems);
-            await set("owned_photos", Array.from(this.ownedIds));
-            await set("series_images", this.seriesImages);
-            await set("series_order", this.seriesOrder);
-          } catch (e) {
-            console.error("儲存資料錯誤：", e);
-          }
-        },
+
+      methods: {
+async saveData() {
+  try {
+    localStorage.setItem(
+      "sakura_txt",
+      JSON.stringify({
+        rawItems: this.rawItems,
+        ownedIds: Array.from(this.ownedIds),
+        seriesImages: this.seriesImages,
+        seriesOrder: this.seriesOrder,
+      })
+    );
+  } catch (e) {
+    console.error("localStorage 備份錯誤：", e);
+  }
+
+  try {
+    await set("raw_items", this.rawItems);
+    await set("owned_photos", Array.from(this.ownedIds));
+    await set("series_images", this.seriesImages);
+    await set("series_order", this.seriesOrder);
+  } catch (e) {
+    console.error("儲存資料錯誤：", e);
+  }
+},   // ← ⭐ 這個逗號非常重要
+
+async goToMemberSeries(batch) {
+  this.navigateTo(
+    { page: "member", memberName: batch.memberName },
+    "#member-" + batch.memberName
+  );
+
+  await nextTick();
+  await nextTick(); // 🔥 保險再等一次
+
+  this.collapsedMemberCats.delete(batch.category);
+
+  this.expandedSeries.add(batch.batchId);
+
+  await nextTick();
+
+  const el = document.getElementById(
+    "batch-target-" + batch.batchId
+  );
+
+  if (el) {
+    el.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+  }
+},
+
+handlePopState(event) {
+  if (event.state) {
+    this.applyState(event.state);
+  }
+},
+
+navigateTo(state, hash) {
+  history.pushState(state, "", hash);
+  this.applyState(state);
+},
+
+applyState(state) {
+  if (!state) return;
+
+  if (state.page === "home") {
+    this.viewMode = "member";
+    this.currentMember = null;
+    this.expandedSeries.clear();        // 🔥 重置
+  }
+
+  else if (state.page === "series") {
+    this.viewMode = "series";
+    this.currentMember = null;
+    this.expandedSeries.clear();        // 🔥 重置
+  }
+
+  else if (state.page === "member") {
+    this.viewMode = "member";
+    this.currentMember = state.memberName;
+    this.expandedSeries.clear();        // 🔥 進成員頁先清空
+  }
+ // 🔥 每次切頁後捲到最上面
+  window.scrollTo({
+    top: 0,
+    behavior: "auto"   // 不要 smooth，避免怪動畫
+  });
+},
+        
         importData(event) {
           const file = event.target.files[0];
           if (!file) return;
@@ -1517,7 +1712,10 @@
 
   if (this.addMode === "member" && names.length === 1 && lastBatchId) {
     // ➤ 成員模式：跳到該成員頁，展開新系列並捲動到中間
-    this.currentMember = names[0];
+this.navigateTo(
+  { page: "member", memberName: names[0] },
+  "#member-" + names[0]
+);
     this.collapsedMemberCats.delete(cat); // 確保分類是展開狀態
 
     await nextTick(); // 等 DOM 更新
@@ -1528,9 +1726,7 @@
       el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   } else if (this.addMode === "series") {
-    // ➤ 系列模式：切到系列模式，展開該系列並捲動
-    this.viewMode = "series";
-    this.currentMember = null;
+
     this.collapsedSeriesCats.delete(cat); // 確保分類展開
 
     await nextTick(); // 等列表渲染完成
@@ -1583,8 +1779,8 @@
         },
         scrollToTop() {
           window.scrollTo({ top: 0, behavior: "smooth" });
-        },
-      },
+        }
+      }
     }).mount("#app");
   </script>
 </body>
