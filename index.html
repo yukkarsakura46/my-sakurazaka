@@ -544,60 +544,74 @@
                 <div
                   v-for="b in batches"
                   :key="b.batchId"
-                  class="flex items-center gap-4 py-2 border-b border-gray-50 last:border-0"
+                  class="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"
                 >
-                  <div
-                    @click="goToMemberSeries(b)"
-                    class="text-[11px] font-bold cursor-pointer flex items-center min-w-[90px] max-w-[90px]"
-                  >
-                    <span class="truncate">{{ b.memberName }}</span>
-                    <span
-                      v-if="b.totalSets > 1"
-                      class="group-tag ml-1 shrink-0"
-                    >
-                      SET {{ b.groupIndex }}
-                    </span>
-                  </div>
+<div class="flex items-center justify-between py-2 border-b border-gray-50">
 
-                  <div class="series-photo-grid w-[170px] shrink-0">
-                    <div
-                      v-for="item in b.items"
-                      :key="item.id"
-                      @click="toggleItem(item.id)"
-                      class="item-slot border cursor-pointer"
-                      :class="
-                        ownedIds.has(item.id)
-                          ? 'bg-pink-500 border-pink-500 text-white'
-                          : 'bg-white text-gray-200'
-                      "
-                    >
-                      {{ item.type }}
-                    </div>
-                  </div>
+  <!-- 左側：成員 + 種類 -->
+  <div class="flex items-center gap-3 flex-1 min-w-0">
 
-<div class="flex items-center gap-2 shrink-0 justify-end min-w-[90px]">
+    <!-- 成員 -->
+    <div
+      @click="goToMemberSeries(b)"
+      class="text-[11px] font-bold cursor-pointer truncate"
+    >
+      {{ b.memberName }}
+    </div>
 
-  <span
-    class="text-[9px] font-black whitespace-nowrap"
-    :class="
-      getProgress(b.items).count === b.items.length
-        ? 'text-green-500'
-        : 'text-slate-600'
-    "
-  >
-    {{
-      getProgress(b.items).count === b.items.length
-        ? 'Complete'
-        : getProgress(b.items).count + '/' + b.items.length
-    }}
-  </span>
+    <!-- SET 標籤 -->
+    <span
+      v-if="b.totalSets > 1"
+      class="group-tag shrink-0"
+    >
+      SET {{ b.groupIndex }}
+    </span>
 
-  <button
-    @click.stop="removeBatchInSeries(b.batchId)"
-    class="text-slate-300 text-[10px] font-bold hover:text-red-500 transition"
-  >
-    ✕
-  </button>
+    <!-- 種類格子 -->
+    <div class="series-photo-grid w-[150px] shrink-0">
+      <div
+        v-for="item in b.items"
+        :key="item.id"
+        @click="toggleItem(item.id)"
+        class="item-slot border cursor-pointer"
+        :class="
+          ownedIds.has(item.id)
+            ? 'bg-pink-500 border-pink-500 text-white'
+            : 'bg-white text-gray-200'
+        "
+      >
+        {{ item.type }}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 右側：完成度 + 刪除 -->
+  <div class="flex items-center gap-3 shrink-0 ml-4">
+
+    <span
+      class="text-[9px] font-black whitespace-nowrap"
+      :class="
+        getProgress(b.items).count === b.items.length
+          ? 'text-green-500'
+          : 'text-slate-600'
+      "
+    >
+      {{
+        getProgress(b.items).count === b.items.length
+          ? 'Complete'
+          : getProgress(b.items).count + '/' + b.items.length
+      }}
+    </span>
+
+    <button
+      @click.stop="removeBatchInSeries(b.batchId)"
+      class="text-slate-300 text-[10px] font-bold hover:text-red-500 transition"
+    >
+      ✕
+    </button>
+
+  </div>
 
 </div>
                 </div>
