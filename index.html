@@ -575,14 +575,14 @@
                     </div>
                   </div>
 
-<div class="flex items-center gap-2 w-[70px] shrink-0 justify-end">
+<div class="flex items-center gap-2 shrink-0 justify-end min-w-[90px]">
 
   <span
-    class="text-[9px] font-black"
+    class="text-[9px] font-black whitespace-nowrap"
     :class="
       getProgress(b.items).count === b.items.length
         ? 'text-green-500'
-        : 'text-pink-400'
+        : 'text-slate-600'
     "
   >
     {{
@@ -594,7 +594,7 @@
 
   <button
     @click.stop="removeBatchInSeries(b.batchId)"
-    class="text-red-300 text-[10px] font-bold hover:text-red-500"
+    class="text-slate-300 text-[10px] font-bold hover:text-red-500 transition"
   >
     ✕
   </button>
