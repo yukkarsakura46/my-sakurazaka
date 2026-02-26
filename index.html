@@ -101,12 +101,25 @@
       >
         🌸 櫻坂46
       </h1>
-      <button
-        @click="showInput = true"
-        class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold shadow-lg"
-      >
-        新增面板
-      </button>
+<div class="flex items-center gap-2">
+
+  <!-- 統計頁 -->
+  <button
+    @click="navigateTo({ page: 'stats' }, '#stats')"
+    class="text-[10px] bg-slate-200 text-slate-700 px-4 py-2 rounded-full font-bold"
+  >
+    📊 統計
+  </button>
+
+  <!-- 新增 -->
+  <button
+    @click="showInput = true"
+    class="text-[10px] bg-slate-800 text-white px-4 py-2 rounded-full font-bold shadow-lg"
+  >
+    新增
+  </button>
+
+</div>
     </nav>
 
     <!-- 新增面板 -->
@@ -179,7 +192,7 @@
               >
                 {{ cat }}
               </option>
-              <option value="custom_cat">＋ 自定義</option>
+              <option value="custom_cat">＋ 手動輸入</option>
             </select>
 
             <select
@@ -215,6 +228,7 @@
               >
                 {{ cat }}
               </option>
+              <option value="custom_cat">＋ 手動輸入</option>
             </select>
 
             <select
@@ -231,6 +245,7 @@
               >
                 {{ s }}
               </option>
+              <option value="custom_series">＋ 手動輸入</option>
             </select>
 
             <select
@@ -338,8 +353,37 @@
     <!-- 內容區 -->
     <main class="max-w-xl mx-auto p-3">
       <!-- Tabs -->
+<!-- 🔍 Sticky 搜尋列 -->
+<div
+  v-if="viewMode !== 'stats'"
+  class="sticky top-[64px] z-20 bg-slate-50 pb-3 pt-2 mb-3"
+>
+  <div class="px-3 relative">
+
+    <input
+      v-model="searchKeyword"
+      type="text"
+      placeholder="搜尋成員或系列..."
+      class="w-full border p-2 pr-8 rounded-xl text-xs
+             bg-white shadow-sm"
+    />
+
+    <!-- 清除按鈕 -->
+    <button
+      v-if="searchKeyword"
+      @click="searchKeyword = ''"
+      class="absolute right-6 top-1/2 -translate-y-1/2
+             text-slate-400 hover:text-slate-600
+             text-xs font-bold transition"
+    >
+      ✕
+    </button>
+
+  </div>
+
+</div>
       <div
-        v-if="!currentMember"
+        v-if="!currentMember && viewMode !== 'stats'"
         class="flex justify-center items-center gap-4 my-4"
       >
         <button
@@ -406,37 +450,53 @@
       <!-- 系列模式 -->
       <div v-if="!currentMember && viewMode === 'series'">
         <!-- 篩選按鈕（開啟 modal） -->
-<!-- 完成狀態篩選 -->
-<div class="flex justify-end mb-3 px-1 text-[10px] font-bold gap-2">
-  <button
-    @click="seriesCompleteFilter = 'all'"
-    :class="seriesCompleteFilter==='all' ? 'text-pink-500' : 'text-slate-400'"
-  >全部</button>
+<!-- 🔧 系列模式工具列 -->
+<div class="flex justify-between items-center mb-4 px-1">
 
-  <button
-    @click="seriesCompleteFilter = 'complete'"
-    :class="seriesCompleteFilter==='complete' ? 'text-green-500' : 'text-slate-400'"
-  >完成</button>
+  <!-- 左側：完成篩選 -->
+  <div class="flex gap-3 text-[11px] font-bold">
+    <button
+      @click="seriesCompleteFilter = 'all'"
+      :class="seriesCompleteFilter==='all'
+        ? 'text-pink-500'
+        : 'text-slate-400'"
+    >
+      全部
+    </button>
 
+    <button
+      @click="seriesCompleteFilter = 'complete'"
+      :class="seriesCompleteFilter==='complete'
+        ? 'text-green-500'
+        : 'text-slate-400'"
+    >
+      完成
+    </button>
+
+    <button
+      @click="seriesCompleteFilter = 'incomplete'"
+      :class="seriesCompleteFilter==='incomplete'
+        ? 'text-pink-400'
+        : 'text-slate-400'"
+    >
+      未完成
+    </button>
+  </div>
+
+  <!-- 右側：成員篩選 -->
   <button
-    @click="seriesCompleteFilter = 'incomplete'"
-    :class="seriesCompleteFilter==='incomplete' ? 'text-pink-400' : 'text-slate-400'"
-  >未完成</button>
+    @click="showSeriesFilter = true"
+    class="text-[11px] font-bold px-4 py-1.5 rounded-full
+           border border-slate-300 bg-white text-slate-600
+           shadow-sm active:scale-95 transition"
+  >
+    篩選
+    <span v-if="seriesMemberFilter.size">
+      （{{ seriesMemberFilter.size }}）
+    </span>
+  </button>
+
 </div>
-
-        <div class="flex justify-end mb-3 px-1">
-          <button
-            @click="showSeriesFilter = true"
-            class="text-[10px] font-bold px-4 py-1.5 rounded-full
-                   border border-slate-300 bg-white text-slate-600
-                   shadow-sm active:scale-95 transition"
-          >
-            篩選
-            <span v-if="seriesMemberFilter.size">
-              （{{ seriesMemberFilter.size }}）
-            </span>
-          </button>
-        </div>
 
         <div v-for="(seriesObj, catName) in itemsBySeriesSorted" :key="catName">
           <h2 class="section-header" @click="toggleCategorySeries(catName)">
@@ -515,21 +575,31 @@
                     </div>
                   </div>
 
-                 <div
-  class="text-[9px] font-black text-right w-[40px] shrink-0"
-  :class="
-    getProgress(b.items).count === b.items.length
-      ? 'text-green-500'
-      : 'text-pink-400'
-  "
->
-  {{
-    getProgress(b.items).count === b.items.length
-      ? 'Complete'
-      : getProgress(b.items).count + '/' + b.items.length
-  }}
-</div>
+<div class="flex items-center gap-2 w-[70px] shrink-0 justify-end">
 
+  <span
+    class="text-[9px] font-black"
+    :class="
+      getProgress(b.items).count === b.items.length
+        ? 'text-green-500'
+        : 'text-pink-400'
+    "
+  >
+    {{
+      getProgress(b.items).count === b.items.length
+        ? 'Complete'
+        : getProgress(b.items).count + '/' + b.items.length
+    }}
+  </span>
+
+  <button
+    @click.stop="removeBatchInSeries(b.batchId)"
+    class="text-red-300 text-[10px] font-bold hover:text-red-500"
+  >
+    ✕
+  </button>
+
+</div>
                 </div>
               </div>
             </div>
@@ -576,6 +646,7 @@
           </div>
         </div>
 
+
         <!-- 成員總進度條 -->
         <div v-if="currentMemberStats" class="px-1 mb-5 text-[11px]">
 <!-- 成員完成篩選 -->
@@ -595,7 +666,7 @@
       ? 'text-green-500'
       : 'text-slate-400'"
   >
-    已完成
+    完成
   </button>
 
   <button
@@ -751,6 +822,120 @@
           </div>
         </div>
       </div>
+<!-- 📊 Dashboard 統計頁 -->
+<div v-if="viewMode === 'stats' && !currentMember">
+<!-- KPI Dashboard -->
+<div class="grid grid-cols-2 gap-4 mb-8">
+
+  <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <div class="text-[10px] tracking-widest text-slate-400 font-semibold mb-2">
+      TOTAL ITEMS
+    </div>
+    <div class="text-3xl font-extrabold text-slate-900">
+      {{ overallStats.total }}
+    </div>
+  </div>
+
+  <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <div class="text-[10px] tracking-widest text-slate-400 font-semibold mb-2">
+      COMPLETION
+    </div>
+    <div class="text-3xl font-extrabold text-slate-900">
+      {{ overallStats.percent }}%
+    </div>
+  </div>
+
+  <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <div class="text-[10px] tracking-widest text-slate-400 font-semibold mb-2">
+      COLLECTED
+    </div>
+    <div class="text-3xl font-extrabold text-slate-900">
+      {{ overallStats.owned }}
+    </div>
+  </div>
+
+  <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <div class="text-[10px] tracking-widest text-slate-400 font-semibold mb-2">
+      MEMBERS
+    </div>
+    <div class="text-3xl font-extrabold text-slate-900">
+      {{ memberList.length }}
+    </div>
+  </div>
+
+</div>
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6">
+
+  <h2 class="text-sm font-bold text-slate-500 mb-6 tracking-wide">
+    MEMBER RANKING
+  </h2>
+
+  <div
+    v-for="(m, index) in showAllRanking ? memberRanking : memberRanking.slice(0,5)"
+    :key="m.name"
+    @click="navigateTo({ page: 'member', memberName: m.name }, '#member-' + m.name)"
+    class="flex justify-between items-center mb-4 cursor-pointer
+           hover:bg-slate-50 px-2 py-2 rounded-lg transition"  
+>
+
+    <div class="flex items-center gap-3">
+      <span
+        class="text-sm font-black w-6 text-center"
+        :class="index < 3 ? 'text-slate-900' : 'text-slate-400'"
+      >
+        {{ index + 1 }}
+      </span>
+
+      <span class="text-sm font-semibold text-slate-700">
+        {{ m.name }}
+      </span>
+    </div>
+
+    <span class="text-sm font-bold text-slate-600">
+      {{ m.owned }} / {{ m.total }}
+    </span>
+
+  </div>
+
+  <div
+    v-if="memberRanking.length > 5"
+    class="text-center mt-4 pt-4 border-t border-slate-100"
+  >
+    <button
+      @click="showAllRanking = !showAllRanking"
+      class="text-xs font-semibold text-slate-400 hover:text-slate-700 transition"
+    >
+      {{ showAllRanking ? 'COLLAPSE ▲' : 'VIEW MORE ▼' }}
+    </button>
+  </div>
+
+</div>
+
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+
+  <h2 class="text-sm font-bold text-slate-500 mb-6 tracking-wide">
+    CATEGORY PROGRESS
+  </h2>
+
+  <div
+    v-for="c in categoryStats"
+    :key="c.cat"
+    class="mb-5"
+  >
+    <div class="flex justify-between text-xs font-semibold text-slate-600 mb-2">
+      <span>{{ c.cat }}</span>
+      <span>{{ c.percent }}%</span>
+    </div>
+
+    <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+      <div
+        class="h-full bg-slate-700"
+        :style="{ width: c.percent + '%' }"
+      ></div>
+    </div>
+  </div>
+
+</div>
     </main>
 
     <!-- 回頂端按鈕 -->
@@ -978,6 +1163,7 @@
           selectedGen: "",
           selectedCategory: "",
           selectedPreset: "",
+          searchKeyword: "",
           batchMemberNames: [],
           scrollY: 0,
           showScrollTop: false,
@@ -990,6 +1176,7 @@
 
           newItem: { name: "", series: "", category: "" },
           rawItems: [],
+          _normalizedCache: {},
           ownedIds: new Set(),
           seriesImages: {},
           seriesOrder: {},
@@ -1004,6 +1191,7 @@
   
           zoomedImg: null,
           singleSlotMode: false,
+          showAllRanking: false,
         };
       },
       computed: {
@@ -1016,6 +1204,75 @@
             )
           );
         },
+overallStats() {
+  const total = this.rawItems.length;
+
+  const owned = this.rawItems.filter(i =>
+    this.ownedIds.has(i.id)
+  ).length;
+
+  const percent = total
+    ? Math.round((owned / total) * 100)
+    : 0;
+
+  return { total, owned, percent };
+},
+
+memberRanking() {
+  const map = {};
+
+  this.rawItems.forEach(item => {
+    if (!map[item.name]) {
+      map[item.name] = { total: 0, owned: 0 };
+    }
+
+    map[item.name].total++;
+    if (this.ownedIds.has(item.id)) {
+      map[item.name].owned++;
+    }
+  });
+
+  const result = Object.keys(map).map(name => {
+    const total = map[name].total;
+    const owned = map[name].owned;
+    const percent = total
+      ? Math.round((owned / total) * 100)
+      : 0;
+
+    return { name, total, owned, percent };
+  });
+
+  // 🔥 改成依「總張數」排序
+  return result.sort((a, b) => b.total - a.total);
+},
+
+categoryStats() {
+  const map = {};
+
+  this.rawItems.forEach(item => {
+    const cat = item.category || "其他";
+
+    if (!map[cat]) {
+      map[cat] = { total: 0, owned: 0 };
+    }
+
+    map[cat].total++;
+    if (this.ownedIds.has(item.id)) {
+      map[cat].owned++;
+    }
+  });
+
+  return Object.keys(map).map(cat => {
+    const total = map[cat].total;
+    const owned = map[cat].owned;
+    const percent = total
+      ? Math.round((owned / total) * 100)
+      : 0;
+
+    return { cat, total, owned, percent };
+  });
+},
+
         memberOrderMap() {
           const map = {};
           let idx = 0;
@@ -1027,85 +1284,26 @@
           });
           return map;
         },
-        itemsBySeriesNormalized() {
-          const grouped = {};
-          const self = this;
-          this.rawItems.forEach(function (item) {
-            const cat = item.category || "其他";
-            if (!grouped[cat]) grouped[cat] = {};
-            if (!grouped[cat][item.series]) grouped[cat][item.series] = [];
-            const batches = grouped[cat][item.series];
-            let batch = null;
-            for (let i = 0; i < batches.length; i++) {
-              if (batches[i].batchId === item.batchId) {
-                batch = batches[i];
-                break;
-              }
-            }
-            if (!batch) {
-              batch = {
-  batchId: item.batchId,
-  seriesName: item.series,
-  memberName: item.name,
-  category: cat,
-  items: [],
-  totalSets: 1,
-  groupIndex: 1,
-};
 
-              batches.push(batch);
-            }
-            batch.items.push(item);
-          });
-
-          Object.keys(grouped).forEach(function (cat) {
-            const seriesMap = grouped[cat];
-            Object.keys(seriesMap).forEach(function (s) {
-              const batches = seriesMap[s];
-              const perMember = {};
-              batches.forEach(function (batch) {
-                if (!perMember[batch.memberName]) {
-                  perMember[batch.memberName] = [];
-                }
-                perMember[batch.memberName].push(batch);
-              });
-              Object.keys(perMember).forEach(function (m) {
-                const list = perMember[m];
-                list.sort(function (a, b) {
-                  return String(a.batchId).localeCompare(String(b.batchId));
-                });
-                const total = list.length;
-                list.forEach(function (batch, idx) {
-                  batch.totalSets = total;
-                  batch.groupIndex = idx + 1;
-                });
-              });
-              batches.sort(function (a, b) {
-                const ao =
-                  self.memberOrderMap[a.memberName] != null
-                    ? self.memberOrderMap[a.memberName]
-                    : 9999;
-                const bo =
-                  self.memberOrderMap[b.memberName] != null
-                    ? self.memberOrderMap[b.memberName]
-                    : 9999;
-                if (ao !== bo) return ao - bo;
-                return String(a.memberName).localeCompare(
-                  String(b.memberName),
-                  "ja"
-                );
-              });
-            });
-          });
-
-          return grouped;
-        },
         itemsBySeriesSorted() {
           const result = {};
-          let base = this.itemsBySeriesNormalized;
+          let base = this._normalizedCache;
           const self = this;
 
-          Object.keys(base).forEach(function (cat) {
+const orderedCats = [];
+
+Object.keys(self.categorizedSeries).forEach(function (cat) {
+  if (base[cat]) {
+    orderedCats.push(cat);
+  }
+});
+
+Object.keys(base).forEach(function (cat) {
+  if (!orderedCats.includes(cat)) {
+    orderedCats.push(cat);
+  }
+});
+            orderedCats.forEach((cat) => {
             let seriesObj = base[cat];
             const baseOrder = self.categorizedSeries[cat] || [];
             const customOrder = self.seriesOrder[cat] || [];
@@ -1167,6 +1365,31 @@ if (self.seriesCompleteFilter !== "all") {
   });
 
   seriesObj = filteredByComplete;
+}
+
+if (self.searchKeyword) {
+  const keyword = self.searchKeyword.toLowerCase();
+  const filteredSearch = {};
+
+  Object.keys(seriesObj).forEach(function (seriesName) {
+    const batches = seriesObj[seriesName];
+
+    const matchSeries = seriesName
+      .toLowerCase()
+      .includes(keyword);
+
+    const matchMember = batches.some(function (b) {
+      return b.memberName
+        .toLowerCase()
+        .includes(keyword);
+    });
+
+    if (matchSeries || matchMember) {
+      filteredSearch[seriesName] = batches;
+    }
+  });
+
+  seriesObj = filteredSearch;
 }
 
             baseOrder.forEach(function (name) {
@@ -1256,19 +1479,20 @@ if (self.seriesCompleteFilter !== "all") {
           });
 
           const result = [];
-          const categoryBaseOrder = ["封入", "MV衣裝", "封面照", "LIVE衣裝", "其他"];
-          const cats = Object.keys(groupedMap);
+const orderedCats = [];
 
-          cats.sort(function (a, b) {
-            const ai = categoryBaseOrder.indexOf(a);
-            const bi = categoryBaseOrder.indexOf(b);
-            const av = ai === -1 ? 999 : ai;
-            const bv = bi === -1 ? 999 : bi;
-            if (av !== bv) return av - bv;
-            return String(a).localeCompare(String(b), "zh-Hant");
-          });
+Object.keys(self.categorizedSeries).forEach(function (cat) {
+  if (groupedMap[cat]) {
+    orderedCats.push(cat);
+  }
+});
 
-          cats.forEach((cat) => {
+Object.keys(groupedMap).forEach(function (cat) {
+  if (!orderedCats.includes(cat)) {
+    orderedCats.push(cat);
+  }
+});
+            orderedCats.forEach((cat) => {
             const block = groupedMap[cat];
             const baseOrder = self.categorizedSeries[cat] || [];
             const seen = {};
@@ -1296,27 +1520,45 @@ if (self.seriesCompleteFilter !== "all") {
             result.push({
               category: cat,
 items: sortedItems.filter((batch) => {
-  if (this.memberCompleteFilter === "all") {
-    return true;
+
+  // ① 完成度篩選
+  if (this.memberCompleteFilter !== "all") {
+
+    const owned = batch.items.filter((i) =>
+      this.ownedIds.has(i.id)
+    ).length;
+
+    const isComplete = owned === batch.items.length;
+
+    if (this.memberCompleteFilter === "complete" && !isComplete) {
+      return false;
+    }
+
+    if (this.memberCompleteFilter === "incomplete" && isComplete) {
+      return false;
+    }
   }
 
-  const owned = batch.items.filter((i) =>
-    this.ownedIds.has(i.id)
-  ).length;
+  // ② 搜尋篩選（加在完成篩選後）
+  if (this.searchKeyword) {
 
-  const isComplete = owned === batch.items.length;
+    const keyword = this.searchKeyword.toLowerCase();
 
-  if (this.memberCompleteFilter === "complete") {
-    return isComplete;
-  }
+    const matchSeries = batch.seriesName
+      .toLowerCase()
+      .includes(keyword);
 
-  if (this.memberCompleteFilter === "incomplete") {
-    return !isComplete;
+    const matchMember = this.currentMember
+      .toLowerCase()
+      .includes(keyword);
+
+    if (!matchSeries && !matchMember) {
+      return false;
+    }
   }
 
   return true;
 })
-
             });
           });
 
@@ -1368,10 +1610,19 @@ items: sortedItems.filter((batch) => {
 watch: {
   currentMember() {
     this.memberCompleteFilter = "all";
-  }
+  },
+rawItems: {
+  handler() {
+    this._normalizedCache = this.buildNormalized();
+  },
+  deep: true,
+},
 },
 
       async mounted() {
+if (!history.state) {
+  history.replaceState({ page: "home" }, "", location.hash || "#home");
+}
 const hash = location.hash;
 
 if (hash.startsWith("#member-")) {
@@ -1412,20 +1663,6 @@ window.removeEventListener("popstate", this.handlePopState);
       methods: {
 async saveData() {
   try {
-    localStorage.setItem(
-      "sakura_txt",
-      JSON.stringify({
-        rawItems: this.rawItems,
-        ownedIds: Array.from(this.ownedIds),
-        seriesImages: this.seriesImages,
-        seriesOrder: this.seriesOrder,
-      })
-    );
-  } catch (e) {
-    console.error("localStorage 備份錯誤：", e);
-  }
-
-  try {
     await set("raw_items", this.rawItems);
     await set("owned_photos", Array.from(this.ownedIds));
     await set("series_images", this.seriesImages);
@@ -1434,6 +1671,97 @@ async saveData() {
     console.error("儲存資料錯誤：", e);
   }
 },   // ← ⭐ 這個逗號非常重要
+
+async removeBatchInSeries(batchId) {
+  if (!confirm("確定刪除？")) return;
+
+  this.rawItems = this.rawItems.filter(i => i.batchId !== batchId);
+
+  delete this.seriesImages[batchId];
+
+  await this.saveData();
+},
+
+
+buildNormalized() {
+  const grouped = {};
+  const self = this;
+
+  this.rawItems.forEach(function (item) {
+    const cat = item.category || "其他";
+    if (!grouped[cat]) grouped[cat] = {};
+    if (!grouped[cat][item.series]) grouped[cat][item.series] = [];
+
+    const batches = grouped[cat][item.series];
+    let batch = batches.find(b => b.batchId === item.batchId);
+
+    if (!batch) {
+      batch = {
+        batchId: item.batchId,
+        seriesName: item.series,
+        memberName: item.name,
+        category: cat,
+        items: [],
+        totalSets: 1,
+        groupIndex: 1,
+      };
+      batches.push(batch);
+    }
+
+    batch.items.push(item);
+  });
+
+  // 保留你原本的排序邏輯（直接整段貼進來）
+  Object.keys(grouped).forEach((cat) => {
+    const seriesMap = grouped[cat];
+
+    Object.keys(seriesMap).forEach((s) => {
+      const batches = seriesMap[s];
+
+      const perMember = {};
+      batches.forEach((batch) => {
+        if (!perMember[batch.memberName]) {
+          perMember[batch.memberName] = [];
+        }
+        perMember[batch.memberName].push(batch);
+      });
+
+      Object.keys(perMember).forEach((m) => {
+        const list = perMember[m];
+        list.sort((a, b) =>
+          String(a.batchId).localeCompare(String(b.batchId))
+        );
+
+        const total = list.length;
+        list.forEach((batch, idx) => {
+          batch.totalSets = total;
+          batch.groupIndex = idx + 1;
+        });
+      });
+
+      batches.sort((a, b) => {
+        const ao =
+          this.memberOrderMap[a.memberName] != null
+            ? this.memberOrderMap[a.memberName]
+            : 9999;
+
+        const bo =
+          this.memberOrderMap[b.memberName] != null
+            ? this.memberOrderMap[b.memberName]
+            : 9999;
+
+        if (ao !== bo) return ao - bo;
+        return String(a.memberName).localeCompare(
+          String(b.memberName),
+          "ja"
+        );
+      });
+    });
+  });
+
+  return grouped;
+},
+
 
 async goToMemberSeries(batch) {
   this.navigateTo(
@@ -1493,6 +1821,11 @@ applyState(state) {
     this.currentMember = state.memberName;
     this.expandedSeries.clear();        // 🔥 進成員頁先清空
   }
+else if (state.page === "stats") {
+  this.viewMode = "stats";
+  this.currentMember = null;
+  this.expandedSeries.clear();
+}
  // 🔥 每次切頁後捲到最上面
   window.scrollTo({
     top: 0,
@@ -1542,6 +1875,7 @@ applyState(state) {
             this.newItem.category = this.selectedCategory;
           }
           this.selectedPreset = "";
+          this.newItem.series = "";
         },
         onSeriesSelect() {
           if (this.selectedPreset !== "custom_series") {
@@ -1615,7 +1949,7 @@ applyState(state) {
           await this.saveData();
         },
         async removeImage(bId) {
-          if (!confirm("刪除圖片？")) return;
+          if (!confirm("確定刪除？")) return;
           delete this.seriesImages[bId];
           await this.saveData();
         },
@@ -1726,11 +2060,18 @@ this.navigateTo(
       el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   } else if (this.addMode === "series") {
+ this.navigateTo(
+    { page: "series" },
+    "#series"
+  );
+
+   await nextTick();
+  await nextTick();
 
     this.collapsedSeriesCats.delete(cat); // 確保分類展開
 
-    await nextTick(); // 等列表渲染完成
     this.expandedSeriesMode.add(cat + seriesName);
+    await nextTick();
 
     const el = document.getElementById("series-target-" + seriesName);
     if (el) {
