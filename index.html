@@ -552,7 +552,7 @@
 <div
   v-for="(b, idx) in memberBatches"
   :key="b.batchId"
-  class="flex items-center justify-between py-1"
+  class="flex flex-wrap items-center justify-between py-1 gap-y-2"
 >
 
   <!-- 左側 -->
@@ -575,7 +575,7 @@
   </div>
 
   <!-- 右側 -->
-  <div class="flex items-center gap-3">
+  <div class="flex items-center gap-3 ml-auto">
 
     <div class="series-photo-grid w-[160px]">
       <div
