@@ -536,132 +536,84 @@
                 </div>
               </div>
 
-              <div
-                v-if="expandedSeriesMode.has(catName + seriesName)"
-                class="p-3 border-t bg-slate-50/50 space-y-3"
-              >
 <div
-  v-for="(memberBatches, memberName) in groupByMember(batches)"
-  :key="memberName"
-  class="border-b border-gray-50 py-2 last:border-0"
+  v-if="expandedSeriesMode.has(catName + seriesName)"
+  class="p-3 border-t bg-slate-50/50 space-y-3"
 >
-
-<!-- 🔥 單 SET -->
-<div
-  v-if="memberBatches.length === 1"
-  class="flex items-center justify-between py-1.5"
->
-  <!-- 左側 -->
-<div class="flex items-center gap-2">
-
-  <!-- 名字 -->
+  <!-- 依成員分組，一個成員底下可有多個 SET -->
   <div
-    class="min-w-[4em] text-[11px] font-semibold truncate cursor-pointer"
-    @click="goToMemberSeries(memberBatches[0])"
+    v-for="(memberBatches, memberName) in groupByMember(batches)"
+    :key="memberName"
+    class="border-b border-gray-50 py-2 last:border-0"
   >
-    {{ memberName }}
-  </div>
 
-  <!-- 四格 -->
-  <div class="series-photo-grid w-[150px] shrink-0">
+
+    <!-- 每個 SET 一列 -->
+<div
+  v-for="(b, idx) in memberBatches"
+  :key="b.batchId"
+  class="flex items-center justify-between py-1"
+>
+
+  <!-- 左側 -->
+  <div class="flex items-center gap-2">
+
     <div
-      v-for="item in memberBatches[0].items"
-      :key="item.id"
-      @click="toggleItem(item.id)"
-      class="item-slot border cursor-pointer"
-      :class="
-        ownedIds.has(item.id)
-          ? 'bg-pink-500 border-pink-500 text-white'
-          : 'bg-white text-gray-200'
-      "
+      class="min-w-[5.5em] text-[11px] font-semibold truncate cursor-pointer"
+      @click="goToMemberSeries(b)"
     >
-      {{ item.type }}
+      {{ memberName }}
     </div>
-  </div>
 
-</div>
+    <span
+      v-if="memberBatches.length > 1"
+      class="group-tag"
+    >
+      SET {{ b.groupIndex }}
+    </span>
+
+  </div>
 
   <!-- 右側 -->
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-3">
+
+    <div class="series-photo-grid w-[160px]">
+      <div
+        v-for="item in b.items"
+        :key="item.id"
+        @click="toggleItem(item.id)"
+        class="item-slot border cursor-pointer"
+        :class="
+          ownedIds.has(item.id)
+            ? 'bg-pink-500 border-pink-500 text-white'
+            : 'bg-white text-gray-200'
+        "
+      >
+        {{ item.type }}
+      </div>
+    </div>
+
     <span
-      class="text-[11px] font-bold w-[38px] text-right"
+      class="text-[11px] font-bold w-[60px] text-right"
       :class="
-        getProgress(memberBatches[0].items).count === memberBatches[0].items.length
+        getProgress(b.items).count === b.items.length
           ? 'text-green-500'
           : 'text-slate-600'
       "
     >
-      {{ getProgress(memberBatches[0].items).count }}/{{ memberBatches[0].items.length }}
+      {{
+        getProgress(b.items).count === b.items.length
+          ? 'Complete'
+          : getProgress(b.items).count + '/' + b.items.length
+      }}
     </span>
 
     <button
-      @click.stop="removeBatchInSeries(memberBatches[0].batchId)"
-      class="text-slate-300 hover:text-red-500 transition"
+      @click.stop="removeBatchInSeries(b.batchId)"
+      class="w-[18px] text-slate-300 hover:text-red-500 transition text-center"
     >
       ✕
     </button>
-  </div>
-</div>
-
-<!-- 🔥 多 SET -->
-<div v-else>
-
-  <!-- 成員名稱 -->
-  <div
-    class="text-[11px] font-semibold mb-1 cursor-pointer"
-    @click="goToMemberSeries(memberBatches[0])"
-  >
-    {{ memberName }}
-  </div>
-
-  <!-- 每個 SET -->
-  <div
-    v-for="b in memberBatches"
-    :key="b.batchId"
-    class="flex items-center justify-between ml-3 mb-1"
-  >
-    <div class="flex items-center gap-2">
-
-      <span class="group-tag">
-        SET {{ b.groupIndex }}
-      </span>
-
-      <div class="series-photo-grid w-[150px]">
-        <div
-          v-for="item in b.items"
-          :key="item.id"
-          @click="toggleItem(item.id)"
-          class="item-slot border cursor-pointer"
-          :class="
-            ownedIds.has(item.id)
-              ? 'bg-pink-500 border-pink-500 text-white'
-              : 'bg-white text-gray-200'
-          "
-        >
-          {{ item.type }}
-        </div>
-      </div>
-    </div>
-
-    <div class="flex items-center gap-2">
-      <span
-        class="text-[11px] font-bold w-[38px] text-right"
-        :class="
-          getProgress(b.items).count === b.items.length
-            ? 'text-green-500'
-            : 'text-slate-600'
-        "
-      >
-        {{ getProgress(b.items).count }}/{{ b.items.length }}
-      </span>
-
-      <button
-        @click.stop="removeBatchInSeries(b.batchId)"
-        class="text-slate-300 hover:text-red-500 transition"
-      >
-        ✕
-      </button>
-    </div>
 
   </div>
 
